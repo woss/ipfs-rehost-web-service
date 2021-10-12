@@ -3,7 +3,6 @@
   "license": "GPL-3.0",
   "version": "0.0.1",
   "description": "",
-  "main": "dist/server.js",
   "scripts": {
     "build": "tsc -b .",
     "start": "concurrently \"pnpm start:server\" \"pnpm start:worker\" ",

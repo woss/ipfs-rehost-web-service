@@ -1,4 +1,4 @@
-import { Express } from 'express'
+import { Express, Request } from 'express'
 import { IPFSHTTPClient } from 'ipfs-http-client'
 import jobQueue from '../worker'
 import { dbConnection, mongoClient } from '../db'
@@ -10,53 +10,64 @@ export function buildAddToQueueRoute(app: Express) {
   /**
    * query param - url encoded URL of th repository
    */
-  app.get('/v1/q/add/:host/:username/:repo', async (req, res) => {
-    const ipfsClient: IPFSHTTPClient = app.get('ipfsClient')
+  app.get(
+    '/v1/q/add/:host/:username/:repo',
+    async (
+      req: Request<
+        { host: string; username: string; repo: string },
+        {},
+        {},
+        { rev: string; tag: string }
+      >,
+      res
+    ) => {
+      const ipfsClient: IPFSHTTPClient = app.get('ipfsClient')
 
-    if (!ipfsClient.isOnline()) {
-      res.status(400).json({ message: 'IPFS is not connected' })
-      return
-    }
+      if (!ipfsClient.isOnline()) {
+        res.status(400).json({ message: 'IPFS is not connected' })
+        return
+      }
 
-    const { host, username, repo } = req.params
-    const { tag, rev } = req.query
+      const { host, username, repo } = req.params
+      const { tag, rev } = req.query
 
-    const realRepoURL = buildRepoURL({ host, username, repo })
+      const realRepoURL = buildRepoURL({ host, username, repo })
 
-    const mongoDocument = await dbConnection
-      .collection('repos')
-      .findOne({ repoUrl: realRepoURL, tag, rev })
+      const mongoDocument = await dbConnection
+        .collection('repos')
+        .findOne({ repoUrl: realRepoURL, tag, rev })
 
-    if (!mongoDocument) {
-      const existsOnHost = await checkDoesGitRepoExists({
-        host,
-        username,
-        repo,
-      })
-      if (!existsOnHost.exists) {
-        res.status(400).json({
-          error: true,
-          message:
-            'Repository not found. Check the repo name or user. Repo name cannot end with .git',
-        })
-      } else {
-        const job = await jobQueue.now('rehostRepo', {
+      if (!mongoDocument) {
+        const existsOnHost = await checkDoesGitRepoExists({
           host,
           username,
           repo,
-          tag,
-          rev,
-          isFork: existsOnHost.fork,
-          isNew: true,
         })
+        if (!existsOnHost.exists) {
+          res.status(400).json({
+            error: true,
+            message:
+              'Repository not found. Check the repo name or user. Repo name cannot end with .git',
+          })
+        } else {
+          const job = await jobQueue.now('rehostRepo', {
+            host,
+            username,
+            repo,
+            tag,
+            rev,
+            isFork: existsOnHost.fork,
+            isNew: true,
+          })
 
-        res.status(201).json({ queue: { jobURL: `/v1/q/${job.attrs._id}` } })
+          res.status(201).json({ queue: { jobURL: `/v1/q/${job.attrs._id}` } })
+        }
+      } else {
+        // here might be the updating of the repo if needed
+        res.status(200).json({ document: mongoDocument })
       }
-    } else {
-      // here might be the updating of the repo if needed
-      res.status(200).json({ document: mongoDocument })
     }
-  })
+  )
 }
 
 export function buildInfoRoute(app: Express) {
