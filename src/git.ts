@@ -55,9 +55,7 @@ export async function gitCloneBare(options: {
   // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
 
   log(yellow('Cloning the repo'), url.href, repoPath)
-  const res = await git.clone(url.href, repoPath, ['--bare'])
-
-  console.log(res)
+  await git.clone(url.href, repoPath, ['--bare'])
 
   await git.cwd({ path: repoPath, root: true })
   await git.updateServerInfo()
