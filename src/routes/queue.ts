@@ -5,7 +5,7 @@ import { dbConnection, mongoClient } from '../db'
 import { checkDoesGitRepoExists, SupportedHosts } from '../git'
 import { ObjectId } from 'mongodb'
 import { buildRepoURL } from '../util'
-
+import { isNil } from 'ramda'
 export function buildAddToQueueRoute(app: Express) {
   /**
    * query param - url encoded URL of th repository
@@ -72,23 +72,41 @@ export function buildAddToQueueRoute(app: Express) {
     }
   )
 }
-
+/**
+ * If the Job is successful return the document
+ * @param app
+ */
 export function buildInfoRoute(app: Express) {
   app.get('/v1/q/:id', async (req, res) => {
-    // 6165af690d393d9c2d9e1dd4
-    const {
-      data: { host, username, repo, tag, rev },
-    } = await dbConnection
-      .collection('jobs')
-      .findOne({ _id: new ObjectId(req.params.id) })
+    try {
+      const { id } = req.params
+      const doc = await dbConnection
+        .collection('jobs')
+        .findOne({ _id: new ObjectId(id) })
 
-    const realRepoURL = buildRepoURL({ host, username, repo })
+      if (isNil(doc)) {
+        throw new Error('Job not found')
+      }
 
-    const mongoDocument = await dbConnection
-      .collection('repos')
-      .findOne({ repoUrl: realRepoURL, tag, rev })
+      if (isNil(doc.lastFinishedAt)) {
+        res.status(200).json({ message: 'Job is still running' })
+      } else {
+        const {
+          data: { host, username, repo, tag, rev },
+        } = doc
 
-    res.json(mongoDocument)
+        const realRepoURL = buildRepoURL({ host, username, repo })
+
+        const mongoDocument = await dbConnection
+          .collection('repos')
+          .findOne({ repoUrl: realRepoURL, tag, rev })
+
+        res.json(mongoDocument)
+      }
+    } catch (error) {
+      console.error(error)
+      res.status(404).json({ error: true, message: error.message })
+    }
   })
 }
 // const { name, registry, version } = req.params

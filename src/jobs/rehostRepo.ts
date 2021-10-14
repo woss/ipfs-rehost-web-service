@@ -1,4 +1,5 @@
 import { Agenda, Job } from 'agenda'
+import { setTimeout } from 'timers/promises'
 import { insertRepo, repoExists, setupMongoDB } from '../db'
 import { gitCloneBare } from '../git'
 import { uploadViaAddAll } from '../ipfs'
@@ -58,6 +59,7 @@ export default async function configure(agenda: Agenda) {
       } catch (error) {
         console.error(error)
       }
+      await setTimeout(3000)
       return returnObject
     }
   })
