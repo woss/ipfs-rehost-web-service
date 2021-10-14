@@ -2,9 +2,10 @@
 import { Express, Request } from 'express'
 import { IPFSHTTPClient } from 'ipfs-http-client'
 import { ObjectId } from 'mongodb'
-import { isNil } from 'ramda'
+import { find, isNil, propEq } from 'ramda'
 import { dbConnection } from '../db'
 import { checkDoesGitRepoExists, SupportedHosts } from '../git'
+import { latestCommitForDefaultBranch } from '../integrations/github'
 import { buildRepoURL } from '../util'
 import jobQueue from '../worker'
 export function buildAddToQueueRoute(app: Express) {
@@ -67,20 +68,44 @@ export function buildAddToQueueRoute(app: Express) {
         }
       } else {
         if (!isNil(update) && (update === 'true' || update === '1')) {
-          const job = await jobQueue.now('rehostRepo', {
-            host,
-            username,
+          const latestCommitResponse = await latestCommitForDefaultBranch({
             repo,
-            tag,
-            rev,
-            branch,
-            update: true,
+            username,
           })
-          res.status(201).json({ queue: { jobURL: `/v1/q/${job.attrs._id}` } })
+          const latestCommit =
+            latestCommitResponse.data.repository.defaultBranchRef.target.history
+              .edges[0].node.hash
+          const isHashRehosted = find(propEq('rev', latestCommit))(
+            mongoDocument.rehosted
+          )
+          if (isNil(isHashRehosted)) {
+            const job = await jobQueue.now('rehostRepo', {
+              host,
+              username,
+              repo,
+              tag,
+              rev,
+              branch,
+              update: true,
+            })
+            res.status(201).json({
+              queue: { jobURL: `/v1/q/${job.attrs._id}`, willUpdate: true },
+            })
+          } else {
+            res.status(200).json({
+              queue: {
+                apiURL: `/v1/repo/${mongoDocument._id}`,
+                willUpdate: false,
+              },
+            })
+          }
         } else {
-          res
-            .status(200)
-            .json({ queue: { apiURL: `/v1/repo/${mongoDocument._id}` } })
+          res.status(200).json({
+            queue: {
+              apiURL: `/v1/repo/${mongoDocument._id}`,
+              willUpdate: false,
+            },
+          })
         }
       }
     }

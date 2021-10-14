@@ -30,6 +30,7 @@ export default async function configure(agenda: Agenda) {
           tag,
           branch,
         })
+
         console.time('uploadViaAddAll')
         const returnObject = await uploadViaAddAll(repoPath)
         console.timeEnd('uploadViaAddAll')
@@ -41,7 +42,6 @@ export default async function configure(agenda: Agenda) {
           rev: commit.hash,
           tag,
         })
-
         return returnObject
       } else {
         const { repoPath, commit } = await gitCloneBare({

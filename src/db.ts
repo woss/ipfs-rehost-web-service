@@ -93,18 +93,16 @@ export async function insertRepo(data: Repository) {
  * @param id Document ID
  * @param data Rehosted repo data
  */
-export async function insertEmbedded(id: string, data: RehostedEmbedded) {
+export async function insertEmbedded(id: ObjectId, data: RehostedEmbedded) {
   const db = await getDB()
-  const r = await db.collection('repos').updateOne(
-    { _id: new ObjectId(id) },
+  return await db.collection('repos').updateOne(
+    { _id: id },
     {
       $push: {
         rehosted: data,
       },
     }
   )
-
-  console.log('rrr', r)
 }
 
 /**
@@ -112,9 +110,13 @@ export async function insertEmbedded(id: string, data: RehostedEmbedded) {
  * @param url
  * @returns
  */
-export async function repoExists(url: string) {
+export async function repoExists(
+  url: string
+): Promise<MongoRepositoryDocument> {
   const db = await getDB()
-  return await db.collection('repos').findOne({ repoUrl: url })
+  return await db
+    .collection('repos')
+    .findOne<MongoRepositoryDocument>({ repoUrl: url })
 }
 
 export interface MongoRehostedDocument extends RehostedEmbedded {

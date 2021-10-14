@@ -46,7 +46,31 @@ export async function latestCommitForDefaultBranch(params: BasicRepoInfo) {
     }
   }
   `
-  const result = await axios.post(
+  const result = await axios.post<
+    { query: string },
+    {
+      data: {
+        data: {
+          repository: {
+            defaultBranchRef: {
+              target: {
+                history: {
+                  edges: {
+                    node: {
+                      hash: string
+                    }
+                  }[]
+                }
+              }
+            }
+          }
+        }
+        errors?: {
+          type: string
+        }
+      }
+    }
+  >(
     graphqlURL,
     { query },
     {
