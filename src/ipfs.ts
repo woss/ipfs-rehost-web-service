@@ -15,7 +15,7 @@ export const ipfsOptions: AddAllOptions = {
   progress: (bytes: number, path: string) => {
     console.log(path, bytes)
   },
-  pin: false,
+  pin: true,
 }
 
 export function createIPFSConnection(app?: Express) {
