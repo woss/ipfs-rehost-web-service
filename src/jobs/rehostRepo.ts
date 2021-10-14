@@ -1,5 +1,5 @@
 import { Agenda, Job } from 'agenda'
-import { setupMongoDB } from '../db'
+import { insertRepo, repoExists, setupMongoDB } from '../db'
 import { gitCloneBare } from '../git'
 import { uploadViaAddAll } from '../ipfs'
 export interface RehostRepoParams {
@@ -21,27 +21,37 @@ export default async function configure(agenda: Agenda) {
 
     const realRepoURL = `https://${host}/${username}/${repo}`
 
-    const documentExists = await mongoClient
-      .collection('repos')
-      .findOne({ repoUrl: realRepoURL })
+    const documentExists = await repoExists(realRepoURL)
 
     if (documentExists) {
       console.log(documentExists)
     } else {
-      const { repoPath } = await gitCloneBare({
+      const { repoPath, commit } = await gitCloneBare({
         repo: realRepoURL,
       })
 
+      console.time('uploadViaAddAll')
       const returnObject = await uploadViaAddAll(repoPath)
+      console.timeEnd('uploadViaAddAll')
+
       try {
-        mongoClient.collection('repos').insertOne({
-          cid: returnObject.cid,
-          ipfsUrl: returnObject.url,
-          size: returnObject.size,
+        await insertRepo({
+          repo: {
+            userName: username,
+            host: host,
+            name: repo,
+          },
+          isFork,
           repoUrl: realRepoURL,
-          rev,
-          tag,
-          isFork: isFork,
+          rehosted: [
+            {
+              cid: returnObject.cid,
+              ipfsUrl: returnObject.url,
+              size: returnObject.size,
+              rev: commit.hash,
+              tag,
+            },
+          ],
           createdAt: Date.now(),
           updatedAt: Date.now(),
         })

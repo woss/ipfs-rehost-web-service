@@ -1,8 +1,11 @@
-import { ObjectId } from 'mongodb'
-import { CID } from 'ipfs-http-client'
 import { Express, Request } from 'express'
-import { dbConnection } from '../db'
-export function listAllRepos(app: Express) {
+import { dbConnection, findRehostedByCID, findRepo } from '../db'
+
+/**
+ * Setup /v1/repo routes
+ * @param app
+ */
+export function repositoryRoutes(app: Express) {
   /**
    * Get all the repos
    */
@@ -32,15 +35,19 @@ export function listAllRepos(app: Express) {
   /**
    * get only one repo
    */
-  app.get('/v1/repo/:cid', async (req, res) => {
-    const { cid } = req.params
+  app.get('/v1/repo/:id', async (req, res) => {
+    const { id } = req.params
     try {
-      CID.parse(cid)
-      const doc = await dbConnection.collection('repos').findOne({ cid })
-      res.json(doc)
+      const doc = await findRepo(id)
+
+      if (!doc) {
+        throw new Error('Repository not found')
+      } else {
+        res.json(doc)
+      }
     } catch (error) {
       console.log(error.message)
-      res.status(400).json({ error: true, message: error.message })
+      res.status(404).json({ error: true, message: error.message })
     }
   })
 }

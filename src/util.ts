@@ -1,9 +1,11 @@
+import { SupportedHosts } from './git'
+
 export function buildRepoURL({
   host,
   username,
   repo,
 }: {
-  host: string
+  host: SupportedHosts
   username: string
   repo: string
 }) {

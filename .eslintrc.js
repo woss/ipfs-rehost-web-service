@@ -1,5 +1,5 @@
 module.exports = {
-  "root": true,
+  root: true,
   env: {
     browser: false,
     node: true,
@@ -9,16 +9,15 @@ module.exports = {
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:prettier/recommended',
-    "prettier"
-
+    'prettier',
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 12,
     sourceType: 'module',
   },
-  plugins: ['@typescript-eslint', 'prettier',],
+  plugins: ['@typescript-eslint', 'prettier'],
   rules: {
-    'prettier/prettier': 'error'
+    'prettier/prettier': 'error',
   },
 }

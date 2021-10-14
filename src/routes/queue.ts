@@ -2,8 +2,8 @@ import { Express, Request } from 'express'
 import { IPFSHTTPClient } from 'ipfs-http-client'
 import jobQueue from '../worker'
 import { dbConnection, mongoClient } from '../db'
-import { checkDoesGitRepoExists } from '../git'
-import { ObjectID, ObjectId } from '.pnpm/bson@4.5.3/node_modules/bson'
+import { checkDoesGitRepoExists, SupportedHosts } from '../git'
+import { ObjectId } from 'mongodb'
 import { buildRepoURL } from '../util'
 
 export function buildAddToQueueRoute(app: Express) {
@@ -14,7 +14,7 @@ export function buildAddToQueueRoute(app: Express) {
     '/v1/q/add/:host/:username/:repo',
     async (
       req: Request<
-        { host: string; username: string; repo: string },
+        { host: SupportedHosts; username: string; repo: string },
         {},
         {},
         { rev: string; tag: string }
@@ -35,14 +35,17 @@ export function buildAddToQueueRoute(app: Express) {
 
       const mongoDocument = await dbConnection
         .collection('repos')
-        .findOne({ repoUrl: realRepoURL, tag, rev })
+        .findOne({ repoUrl: realRepoURL })
 
       if (!mongoDocument) {
         const existsOnHost = await checkDoesGitRepoExists({
-          host,
+          host: host,
           username,
           repo,
         })
+
+        console.log('dadsada', existsOnHost)
+
         if (!existsOnHost.exists) {
           res.status(400).json({
             error: true,
@@ -56,7 +59,7 @@ export function buildAddToQueueRoute(app: Express) {
             repo,
             tag,
             rev,
-            isFork: existsOnHost.fork,
+            isFork: existsOnHost.isFork,
             isNew: true,
           })
 
@@ -64,7 +67,7 @@ export function buildAddToQueueRoute(app: Express) {
         }
       } else {
         // here might be the updating of the repo if needed
-        res.status(200).json({ document: mongoDocument })
+        res.status(200).json({ id: mongoDocument._id })
       }
     }
   )
