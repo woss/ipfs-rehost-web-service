@@ -89,11 +89,11 @@ export async function insertRepo(data: Repository) {
 }
 
 /**
- * Append the
- * @param id
- * @param data
+ * Append new rehosted data
+ * @param id Document ID
+ * @param data Rehosted repo data
  */
-export async function insertEmbedded(id: string, data: RehostedEmbedded) {}
+export async function insertEmbedded(id: string, data: RehostedEmbedded) { }
 
 /**
  * Check does repository exists by its URL

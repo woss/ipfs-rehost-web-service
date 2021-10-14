@@ -27,6 +27,7 @@ export async function gitCloneBare(options: {
   repo: string
   tag?: string
   rev?: string
+  branch?: string
   unpack?: boolean
 }) {
   const git = simpleGit()

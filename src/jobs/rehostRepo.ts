@@ -1,6 +1,5 @@
 import { Agenda, Job } from 'agenda'
-import { setTimeout } from 'timers/promises'
-import { insertRepo, repoExists, setupMongoDB } from '../db'
+import { insertEmbedded, insertRepo, repoExists } from '../db'
 import { gitCloneBare } from '../git'
 import { uploadViaAddAll } from '../ipfs'
 export interface RehostRepoParams {
@@ -9,33 +8,43 @@ export interface RehostRepoParams {
   repo: string
   tag?: string
   rev?: string
+  branch?: string
   isFork?: boolean
-  isNew: boolean
+  update: boolean
 }
 export default async function configure(agenda: Agenda) {
   agenda.define('rehostRepo', async (job: Job<RehostRepoParams>) => {
-    const mongoClient = await setupMongoDB()
 
-    const {
-      data: { host, repo, username, rev, tag, isFork },
-    } = job.attrs
+    try {
+      const {
+        data: { host, repo, username, rev, tag, isFork, update, branch },
+      } = job.attrs
 
-    const realRepoURL = `https://${host}/${username}/${repo}`
+      const realRepoURL = `https://${host}/${username}/${repo}`
 
-    const documentExists = await repoExists(realRepoURL)
+      const documentExists = await repoExists(realRepoURL)
 
-    if (documentExists) {
-      console.log(documentExists)
-    } else {
-      const { repoPath, commit } = await gitCloneBare({
-        repo: realRepoURL,
-      })
+      if (documentExists && update) {
+        console.log(documentExists)
+        const { repoPath, commit } = await gitCloneBare({
+          repo: realRepoURL,
+          rev,
+          tag,
+          branch
+        })
 
-      console.time('uploadViaAddAll')
-      const returnObject = await uploadViaAddAll(repoPath)
-      console.timeEnd('uploadViaAddAll')
+      } else {
+        const { repoPath, commit } = await gitCloneBare({
+          repo: realRepoURL,
+          rev,
+          tag,
+          branch
+        })
 
-      try {
+        console.time('uploadViaAddAll')
+        const returnObject = await uploadViaAddAll(repoPath)
+        console.timeEnd('uploadViaAddAll')
+
         await insertRepo({
           repo: {
             userName: username,
@@ -56,11 +65,12 @@ export default async function configure(agenda: Agenda) {
           createdAt: Date.now(),
           updatedAt: Date.now(),
         })
-      } catch (error) {
-        console.error(error)
+
+
+        return returnObject
       }
-      await setTimeout(3000)
-      return returnObject
+    } catch (error) {
+      console.error(error)
     }
   })
 }

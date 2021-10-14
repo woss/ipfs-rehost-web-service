@@ -17,7 +17,7 @@ export function buildAddToQueueRoute(app: Express) {
         { host: SupportedHosts; username: string; repo: string },
         {},
         {},
-        { rev: string; tag: string }
+        { rev: string; tag: string, update: string, branch: string }
       >,
       res
     ) => {
@@ -29,7 +29,8 @@ export function buildAddToQueueRoute(app: Express) {
       }
 
       const { host, username, repo } = req.params
-      const { tag, rev } = req.query
+      const { tag, rev, update, branch } = req.query
+
 
       const realRepoURL = buildRepoURL({ host, username, repo })
 
@@ -59,15 +60,28 @@ export function buildAddToQueueRoute(app: Express) {
             repo,
             tag,
             rev,
+            branch,
             isFork: existsOnHost.isFork,
-            isNew: true,
+            update: false,
           })
 
           res.status(201).json({ queue: { jobURL: `/v1/q/${job.attrs._id}` } })
         }
       } else {
-        // here might be the updating of the repo if needed
-        res.status(200).json({ id: mongoDocument._id })
+        if (!isNil(update) && (update === 'true' || update === '1')) {
+          const job = await jobQueue.now('rehostRepo', {
+            host,
+            username,
+            repo,
+            tag,
+            rev,
+            branch,
+            update: true,
+          })
+          res.status(201).json({ queue: { jobURL: `/v1/q/${job.attrs._id}` } })
+        } else {
+          res.status(200).json({ queue: { apiURL: `/v1/repo/${mongoDocument._id}` } })
+        }
       }
     }
   )
