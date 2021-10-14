@@ -30,7 +30,7 @@ export function repositoryRoutes(app: Express) {
         .skip(startFrom)
         .limit(perPage)
         .toArray()
-      res.json({ docs, total, pages })
+      res.status(200).json({ docs, total, pages })
     }
   )
   /**

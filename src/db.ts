@@ -58,9 +58,7 @@ export interface RepositoryInfo {
   userName: string
   host: string
 }
-export interface MongoRepositoryDocument extends Repository {
-  _id: ObjectId
-}
+
 export interface Repository {
   repo: RepositoryInfo
   repoUrl: string
@@ -68,6 +66,10 @@ export interface Repository {
   isFork: boolean
   createdAt: number
   updatedAt: number
+}
+
+export interface MongoRepositoryDocument extends Repository {
+  _id: ObjectId
 }
 
 /**

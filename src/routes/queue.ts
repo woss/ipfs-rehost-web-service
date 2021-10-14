@@ -26,7 +26,7 @@ export function buildAddToQueueRoute(app: Express) {
       const ipfsClient: IPFSHTTPClient = app.get('ipfsClient')
 
       if (!ipfsClient.isOnline()) {
-        res.status(400).json({ message: 'IPFS is not connected' })
+        res.status(400).json({ error: true, message: 'IPFS is not connected' })
         return
       }
 
@@ -47,7 +47,7 @@ export function buildAddToQueueRoute(app: Express) {
         })
 
         if (!existsOnHost.exists) {
-          res.status(400).json({
+          res.status(404).json({
             error: true,
             message:
               'Repository not found. Check the repo name or user. Repo name cannot end with .git',
@@ -64,7 +64,10 @@ export function buildAddToQueueRoute(app: Express) {
             update: false,
           })
 
-          res.status(201).json({ queue: { jobURL: `/v1/q/${job.attrs._id}` } })
+          res.status(201).json({
+            apiURL: `/v1/q/${job.attrs._id}`,
+            willUpdate: true,
+          })
         }
       } else {
         if (!isNil(update) && (update === 'true' || update === '1')) {
@@ -89,22 +92,19 @@ export function buildAddToQueueRoute(app: Express) {
               update: true,
             })
             res.status(201).json({
-              queue: { jobURL: `/v1/q/${job.attrs._id}`, willUpdate: true },
+              apiURL: `/v1/q/${job.attrs._id}`,
+              willUpdate: true,
             })
           } else {
             res.status(200).json({
-              queue: {
-                apiURL: `/v1/repo/${mongoDocument._id}`,
-                willUpdate: false,
-              },
+              apiURL: `/v1/repo/${mongoDocument._id}`,
+              willUpdate: false,
             })
           }
         } else {
           res.status(200).json({
-            queue: {
-              apiURL: `/v1/repo/${mongoDocument._id}`,
-              willUpdate: false,
-            },
+            apiURL: `/v1/repo/${mongoDocument._id}`,
+            willUpdate: false,
           })
         }
       }
