@@ -4,7 +4,13 @@
 
 Web service for re-hosting the git repositories using the IPFS.
 
-# Development
+# Production
+
+It's fairly stable, but run it on production at your own risk.
+
+See [Building and running the project](#building-and-running-the-project) for more info
+
+# Development and running locally
 
 You will need:
 
@@ -32,6 +38,18 @@ pnpm start
 # lint and fix stuff
 pnpm lint:fix
 ```
+
+### Building and running the project
+
+#### Building a Docker image
+
+With `docker-compose` it's easy. Run `docker-compose build rehost` and you will have the image build with all production deps installed.
+
+#### Running the service with docker
+
+The MongoDB is bundeled with, but you can use any mongodb service, just configure the `MONGODB_HOST` and `MONGODB_PORT` in your `.env` file and you are ready to go.
+
+You can run the docker image from the https://hub.docker.com/r/woss/rehost-service
 
 # API endpoints
 
