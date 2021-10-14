@@ -1,10 +1,9 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 require('dotenv').config()
-import { verifyEnv } from './env'
-verifyEnv()
-
 import Agenda from 'agenda'
-import { envs } from './env'
+import { envs, verifyEnv } from './env'
 import configureRehostRepo from './jobs/rehostRepo'
+verifyEnv()
 
 const jobQueue = new Agenda({
   db: {

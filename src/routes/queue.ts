@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { Express, Request } from 'express'
 import { IPFSHTTPClient } from 'ipfs-http-client'
-import jobQueue from '../worker'
-import { dbConnection, mongoClient } from '../db'
-import { checkDoesGitRepoExists, SupportedHosts } from '../git'
 import { ObjectId } from 'mongodb'
-import { buildRepoURL } from '../util'
 import { isNil } from 'ramda'
+import { dbConnection } from '../db'
+import { checkDoesGitRepoExists, SupportedHosts } from '../git'
+import { buildRepoURL } from '../util'
+import jobQueue from '../worker'
 export function buildAddToQueueRoute(app: Express) {
   /**
    * query param - url encoded URL of th repository
@@ -17,7 +18,7 @@ export function buildAddToQueueRoute(app: Express) {
         { host: SupportedHosts; username: string; repo: string },
         {},
         {},
-        { rev: string; tag: string, update: string, branch: string }
+        { rev: string; tag: string; update: string; branch: string }
       >,
       res
     ) => {
@@ -31,7 +32,6 @@ export function buildAddToQueueRoute(app: Express) {
       const { host, username, repo } = req.params
       const { tag, rev, update, branch } = req.query
 
-
       const realRepoURL = buildRepoURL({ host, username, repo })
 
       const mongoDocument = await dbConnection
@@ -44,8 +44,6 @@ export function buildAddToQueueRoute(app: Express) {
           username,
           repo,
         })
-
-        console.log('dadsada', existsOnHost)
 
         if (!existsOnHost.exists) {
           res.status(400).json({
@@ -80,7 +78,9 @@ export function buildAddToQueueRoute(app: Express) {
           })
           res.status(201).json({ queue: { jobURL: `/v1/q/${job.attrs._id}` } })
         } else {
-          res.status(200).json({ queue: { apiURL: `/v1/repo/${mongoDocument._id}` } })
+          res
+            .status(200)
+            .json({ queue: { apiURL: `/v1/repo/${mongoDocument._id}` } })
         }
       }
     }

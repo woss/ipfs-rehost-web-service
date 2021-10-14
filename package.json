@@ -8,8 +8,9 @@
     "start": " docker-compose up -d && concurrently \"pnpm start:server\" \"pnpm start:worker\" --kill-others",
     "start:worker": "nodemon -w ./src src/worker.ts",
     "start:server": "nodemon -w ./src src/server.ts",
-    "lint:fix": "prettier --config .prettierrc --write .",
-    "lint:check": "prettier --check ."
+    "lint:prettier": "prettier --config .prettierrc --write .",
+    "lint:eslint": "eslint --ext .js,.ts .",
+    "lint:fix": "pnpm lint:prettier; pnpm lint:eslint"
   },
   "dependencies": {
     "agenda": "^4.2.1",
@@ -32,6 +33,7 @@
     "concurrently": "^6.3.0",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-prettier": "^4.0.0",
     "husky": "^7.0.2",
     "lint-staged": "^11.1.2",

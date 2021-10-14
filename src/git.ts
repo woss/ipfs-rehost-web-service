@@ -1,7 +1,10 @@
-import os from 'os'
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-case-declarations */
+/* eslint-disable @typescript-eslint/no-var-requires */
 import { yellow } from 'chalk'
-import { promisify } from 'util'
+import os from 'os'
 import simpleGit from 'simple-git'
+import { promisify } from 'util'
 import { repoExists } from './integrations/github'
 
 const exec = promisify(require('child_process').exec)

@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { Express, Request } from 'express'
-import { dbConnection, findRehostedByCID, findRepo } from '../db'
+import { dbConnection, findRepo } from '../db'
 
 /**
  * Setup /v1/repo routes
@@ -13,15 +14,15 @@ export function repositoryRoutes(app: Express) {
     '/v1/repos',
     async (req: Request<{}, {}, {}, { page: number }>, res) => {
       const { page } = req.query
-      var perPage = 10
+      const perPage = 10
 
-      var total = await dbConnection.collection('repos').countDocuments()
+      const total = await dbConnection.collection('repos').countDocuments()
 
-      var pages = Math.ceil(total / perPage)
+      const pages = Math.ceil(total / perPage)
 
-      var pageNumber = page == null || page <= 0 ? 1 : page
+      const pageNumber = page == null || page <= 0 ? 1 : page
 
-      var startFrom = (pageNumber - 1) * perPage
+      const startFrom = (pageNumber - 1) * perPage
       const docs = await dbConnection
         .collection('repos')
         .find({})

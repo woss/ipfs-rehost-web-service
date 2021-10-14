@@ -18,7 +18,7 @@ export interface BasicRepoInfo {
  * @returns
  */
 export async function latestCommitForDefaultBranch(params: BasicRepoInfo) {
-  const { branch, repo, username } = params
+  const { repo, username } = params
   const query = `
   query {
     repository(owner: "${username.trim()}", name: "${repo.trim()}") {

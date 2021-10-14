@@ -14,7 +14,6 @@ export interface RehostRepoParams {
 }
 export default async function configure(agenda: Agenda) {
   agenda.define('rehostRepo', async (job: Job<RehostRepoParams>) => {
-
     try {
       const {
         data: { host, repo, username, rev, tag, isFork, update, branch },
@@ -22,23 +21,34 @@ export default async function configure(agenda: Agenda) {
 
       const realRepoURL = `https://${host}/${username}/${repo}`
 
-      const documentExists = await repoExists(realRepoURL)
+      const mongoDocument = await repoExists(realRepoURL)
 
-      if (documentExists && update) {
-        console.log(documentExists)
+      if (mongoDocument && update) {
         const { repoPath, commit } = await gitCloneBare({
           repo: realRepoURL,
           rev,
           tag,
-          branch
+          branch,
+        })
+        console.time('uploadViaAddAll')
+        const returnObject = await uploadViaAddAll(repoPath)
+        console.timeEnd('uploadViaAddAll')
+
+        await insertEmbedded(mongoDocument._id, {
+          cid: returnObject.cid,
+          ipfsUrl: returnObject.url,
+          size: returnObject.size,
+          rev: commit.hash,
+          tag,
         })
 
+        return returnObject
       } else {
         const { repoPath, commit } = await gitCloneBare({
           repo: realRepoURL,
           rev,
           tag,
-          branch
+          branch,
         })
 
         console.time('uploadViaAddAll')
@@ -65,7 +75,6 @@ export default async function configure(agenda: Agenda) {
           createdAt: Date.now(),
           updatedAt: Date.now(),
         })
-
 
         return returnObject
       }

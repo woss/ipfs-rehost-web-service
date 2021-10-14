@@ -1,6 +1,6 @@
 import { Express } from 'express'
-import { findRehostedByCID } from '../db'
 import { CID } from 'ipfs-http-client'
+import { findRehostedByCID } from '../db'
 
 export async function rehostRoutes(app: Express) {
   /**

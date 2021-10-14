@@ -1,7 +1,7 @@
-import type { AddAllOptions, AddOptions } from 'ipfs-core-types/src/root'
-import { create, globSource, IPFSHTTPClient } from 'ipfs-http-client'
-import { Express } from 'express'
 import { blue, green } from 'chalk'
+import { Express } from 'express'
+import type { AddAllOptions } from 'ipfs-core-types/src/root'
+import { create, globSource, IPFSHTTPClient } from 'ipfs-http-client'
 import { envs } from './env'
 
 const log = console.log
@@ -47,9 +47,9 @@ interface AddedFiles {
  */
 export async function uploadViaAddAll(path: string) {
   const ipfsClient: IPFSHTTPClient = createIPFSConnection()
-  const { IPFS_API_PORT, IPFS_HOSTNAME, IPFS_API_PROTOCOL } = envs()
+  const { IPFS_HOSTNAME } = envs()
 
-  let addedFiles: AddedFiles[] = []
+  const addedFiles: AddedFiles[] = []
 
   console.log('Upload to IPFS started ...')
 

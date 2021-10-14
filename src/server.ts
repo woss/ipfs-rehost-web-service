@@ -1,16 +1,15 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 require('dotenv').config()
-import { verifyEnv } from './env'
-verifyEnv()
-
-import { buildAddToQueueRoute, buildInfoRoute } from './routes/queue'
-import { createIPFSConnection } from './ipfs'
-import { setupMongoDB } from './db'
-import { MongoClient } from 'mongodb'
 import express, { Express } from 'express'
-import { envs } from './env'
-import './worker'
-import { repositoryRoutes } from './routes/repos'
+import { MongoClient } from 'mongodb'
+import { setupMongoDB } from './db'
+import { envs, verifyEnv } from './env'
+import { createIPFSConnection } from './ipfs'
+import { buildAddToQueueRoute, buildInfoRoute } from './routes/queue'
 import { rehostRoutes } from './routes/rehost'
+import { repositoryRoutes } from './routes/repos'
+import './worker'
+verifyEnv()
 
 export let app: Express | null = null
 

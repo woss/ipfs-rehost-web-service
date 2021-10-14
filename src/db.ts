@@ -1,8 +1,8 @@
-import { Express } from 'express'
-import { MongoClient, Db, ObjectId } from 'mongodb'
-import { envs } from './env'
 import { blue } from 'chalk'
-import R from 'ramda'
+import { Express } from 'express'
+import { Db, MongoClient, ObjectId } from 'mongodb'
+import { find, isNil, propEq } from 'ramda'
+import { envs } from './env'
 export const dbName = 'ipfs-rehost'
 export let mongoClient: MongoClient = null
 export let dbConnection: Db = null
@@ -93,7 +93,19 @@ export async function insertRepo(data: Repository) {
  * @param id Document ID
  * @param data Rehosted repo data
  */
-export async function insertEmbedded(id: string, data: RehostedEmbedded) { }
+export async function insertEmbedded(id: string, data: RehostedEmbedded) {
+  const db = await getDB()
+  const r = await db.collection('repos').updateOne(
+    { _id: new ObjectId(id) },
+    {
+      $push: {
+        rehosted: data,
+      },
+    }
+  )
+
+  console.log('rrr', r)
+}
 
 /**
  * Check does repository exists by its URL
@@ -121,11 +133,11 @@ export async function findRehostedByCID(
     .collection('repos')
     .findOne<MongoRepositoryDocument>({ 'rehosted.cid': cid })
 
-  if (R.isNil(doc)) {
+  if (isNil(doc)) {
     throw new Error('This repository is not re-hosted')
   }
   // find the doc in the result. this is a hacky way to get it since i forgot how to use mongo :(
-  return R.find(R.propEq('cid', cid))(doc.rehosted) as MongoRehostedDocument
+  return find(propEq('cid', cid))(doc.rehosted) as MongoRehostedDocument
 }
 
 /**
@@ -139,7 +151,7 @@ export async function findRepo(id: string): Promise<MongoRepositoryDocument> {
     .collection('repos')
     .findOne<MongoRepositoryDocument>({ _id: new ObjectId(id) })
 
-  if (R.isNil(doc)) {
+  if (isNil(doc)) {
     throw new Error('This repository is not re-hosted')
   }
   return doc
