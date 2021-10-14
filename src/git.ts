@@ -1,10 +1,8 @@
 import os from 'os'
-import { yellow, red } from 'chalk'
+import { yellow } from 'chalk'
 import { promisify } from 'util'
 import simpleGit from 'simple-git'
-import axios from 'axios'
-import { envs } from './env'
-import { MainData } from './github-interfaces'
+import { repoExists } from './integrations/github'
 
 const exec = promisify(require('child_process').exec)
 const exists = promisify(require('fs').exists)
@@ -29,6 +27,7 @@ export async function gitCloneBare(options: {
   repo: string
   tag?: string
   rev?: string
+  branch?: string
   unpack?: boolean
 }) {
   const git = simpleGit()
@@ -55,12 +54,11 @@ export async function gitCloneBare(options: {
   // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
 
   log(yellow('Cloning the repo'), url.href, repoPath)
-  const res = await git.clone(url.href, repoPath, ['--bare'])
-
-  console.log(res)
+  await git.clone(url.href, repoPath, ['--bare'])
 
   await git.cwd({ path: repoPath, root: true })
   await git.updateServerInfo()
+  const { latest } = await git.log({ maxCount: 1 })
 
   if (unpack) {
     log(yellow('Unpacking ...'))
@@ -74,52 +72,49 @@ export async function gitCloneBare(options: {
 
   return {
     repoPath,
+    commit: latest,
   }
 }
 
-export async function checkDoesGitRepoExists({
-  host,
-  username,
-  repo,
-}: {
+export enum SupportedHosts {
+  GITHUB = 'github.com',
+  GITLAB = 'gitlab.com',
+}
+
+/**
+ * Check does git repo exists on the host, currently github.com
+ * @param params
+ * @returns
+ */
+export async function checkDoesGitRepoExists(params: {
   username: string
   repo: string
-  host: string
+  host: SupportedHosts
 }): Promise<{
   exists: boolean
-  fork?: boolean
+  isFork?: boolean
 }> {
+  const { host, username, repo } = params
   try {
     switch (host) {
-      case 'github.com':
-        const { data } = await axios.get<MainData>(
-          `https://api.${host}/repos/${username}/${repo}`,
-          {
-            headers: {
-              authorization: `token ${envs().GITHUB_ACCESS_TOKEN}`,
-              accept: 'application/vnd.github.v3+json',
-            },
-          }
-        )
-
-        if (data.fork) {
+      case SupportedHosts.GITHUB:
+        const data = await repoExists({ username, repo })
+        if (data.isFork) {
           console.log(
             'Repo is a fork, cloning it twice in row will not generate same CID'
           )
-          // console.log((data.fork));
         }
 
-        // console.log((data));
-        return { exists: true, fork: data.fork }
+        return data
 
       default:
         console.error('DEFAULT CASE FOR THE HOST IS NOT AVAILABLE!!!')
         break
     }
   } catch (error) {
-    // console.error("Error response:");
-    // console.error(error.response.data);    // ***
-    // console.error(error.response.status);  // ***
+    console.error('Error response:')
+    console.error(error.response.data) // ***
+    console.error(error.response.status) // ***
     // console.error(error.response.headers); // ***
     return { exists: false }
   }

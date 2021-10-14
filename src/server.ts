@@ -9,6 +9,8 @@ import { MongoClient } from 'mongodb'
 import express, { Express } from 'express'
 import { envs } from './env'
 import './worker'
+import { repositoryRoutes } from './routes/repos'
+import { rehostRoutes } from './routes/rehost'
 
 export let app: Express | null = null
 
@@ -39,6 +41,9 @@ export async function createApp() {
    */
   buildAddToQueueRoute(app)
   buildInfoRoute(app)
+  repositoryRoutes(app)
+  rehostRoutes(app)
+
   return app
 }
 

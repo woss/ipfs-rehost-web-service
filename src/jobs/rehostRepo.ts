@@ -1,5 +1,5 @@
 import { Agenda, Job } from 'agenda'
-import { setupMongoDB } from '../db'
+import { insertEmbedded, insertRepo, repoExists } from '../db'
 import { gitCloneBare } from '../git'
 import { uploadViaAddAll } from '../ipfs'
 export interface RehostRepoParams {
@@ -8,47 +8,69 @@ export interface RehostRepoParams {
   repo: string
   tag?: string
   rev?: string
+  branch?: string
   isFork?: boolean
-  isNew: boolean
+  update: boolean
 }
 export default async function configure(agenda: Agenda) {
   agenda.define('rehostRepo', async (job: Job<RehostRepoParams>) => {
-    const mongoClient = await setupMongoDB()
 
-    const {
-      data: { host, repo, username, rev, tag, isFork },
-    } = job.attrs
+    try {
+      const {
+        data: { host, repo, username, rev, tag, isFork, update, branch },
+      } = job.attrs
 
-    const realRepoURL = `https://${host}/${username}/${repo}`
+      const realRepoURL = `https://${host}/${username}/${repo}`
 
-    const documentExists = await mongoClient
-      .collection('repos')
-      .findOne({ repoUrl: realRepoURL })
+      const documentExists = await repoExists(realRepoURL)
 
-    if (documentExists) {
-      console.log(documentExists)
-    } else {
-      const { repoPath } = await gitCloneBare({
-        repo: realRepoURL,
-      })
-
-      const returnObject = await uploadViaAddAll(repoPath)
-      try {
-        mongoClient.collection('repos').insertOne({
-          cid: returnObject.cid,
-          ipfsUrl: returnObject.url,
-          size: returnObject.size,
-          repoUrl: realRepoURL,
+      if (documentExists && update) {
+        console.log(documentExists)
+        const { repoPath, commit } = await gitCloneBare({
+          repo: realRepoURL,
           rev,
           tag,
-          isFork: isFork,
+          branch
+        })
+
+      } else {
+        const { repoPath, commit } = await gitCloneBare({
+          repo: realRepoURL,
+          rev,
+          tag,
+          branch
+        })
+
+        console.time('uploadViaAddAll')
+        const returnObject = await uploadViaAddAll(repoPath)
+        console.timeEnd('uploadViaAddAll')
+
+        await insertRepo({
+          repo: {
+            userName: username,
+            host: host,
+            name: repo,
+          },
+          isFork,
+          repoUrl: realRepoURL,
+          rehosted: [
+            {
+              cid: returnObject.cid,
+              ipfsUrl: returnObject.url,
+              size: returnObject.size,
+              rev: commit.hash,
+              tag,
+            },
+          ],
           createdAt: Date.now(),
           updatedAt: Date.now(),
         })
-      } catch (error) {
-        console.error(error)
+
+
+        return returnObject
       }
-      return returnObject
+    } catch (error) {
+      console.error(error)
     }
   })
 }
