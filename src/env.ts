@@ -2,6 +2,7 @@ import { dbName } from './db'
 
 export function verifyEnv() {
   const {
+    REHOST_SERVICE_PORT,
     IPFS_API_IP,
     IPFS_HOSTNAME,
     IPFS_API_PORT,
@@ -12,6 +13,7 @@ export function verifyEnv() {
   } = process.env
 
   if (
+    !REHOST_SERVICE_PORT ||
     !IPFS_API_PORT ||
     !IPFS_API_PROTOCOL ||
     !IPFS_API_IP ||
@@ -26,6 +28,7 @@ export function verifyEnv() {
 
 export function envs() {
   const {
+    REHOST_SERVICE_PORT,
     IPFS_API_IP,
     IPFS_HOSTNAME,
     IPFS_API_PORT,
@@ -36,7 +39,8 @@ export function envs() {
   } = process.env
 
   return {
-    IPFS_API_PORT,
+    REHOST_SERVICE_PORT: parseInt(REHOST_SERVICE_PORT, 10),
+    IPFS_API_PORT: parseInt(IPFS_API_PORT, 10),
     IPFS_API_PROTOCOL,
     IPFS_API_IP,
     IPFS_HOSTNAME,

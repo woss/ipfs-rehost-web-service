@@ -25,7 +25,7 @@ export function createIPFSConnection(app?: Express) {
   const { IPFS_API_PORT, IPFS_API_IP } = envs()
   ipfsClient = create({
     host: IPFS_API_IP,
-    port: parseInt(IPFS_API_PORT, 10),
+    port: IPFS_API_PORT,
   })
 
   if (app) {

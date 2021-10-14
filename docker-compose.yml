@@ -1,11 +1,13 @@
 version: '3.4'
 services:
-  # ipf-rehost:
-  #   image: myapp:1.0
-  #   env_file: ./.env
-  #   restart: unless-stopped
-  #   ports:
-  #     - 3000:3000
+  rehost:
+    image: woss/rehost-service:0.1.0
+    build:
+      context: .
+    env_file: ./.env
+    restart: unless-stopped
+    ports:
+      - 3000:3000
   mongodb:
     image: mongo
     env_file: ./.env

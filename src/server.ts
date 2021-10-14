@@ -19,7 +19,7 @@ export async function createApp() {
   const envList = envs()
   const protocol = envList.IPFS_API_PROTOCOL
   const host = envList.IPFS_HOSTNAME
-  const apiPort = parseInt(envList.IPFS_API_PORT, 10)
+  const apiPort = envList.IPFS_API_PORT
 
   // create express app
   app = express()
@@ -27,7 +27,7 @@ export async function createApp() {
   app.set('ipfs_protocol', protocol)
   app.set('ipfs_host', host)
   app.set('ipfs_api_port', apiPort)
-  app.set('port', 3000)
+  app.set('port', envList.REHOST_SERVICE_PORT || 3000)
 
   app.use(express.json())
   app.use(express.urlencoded({ extended: true }))
