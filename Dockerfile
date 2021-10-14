@@ -11,10 +11,15 @@ RUN pnpm install --frozen-lockfile --silent && \
   pnpm lint:fix && \
   pnpm build
 
-
+######## MAIN IMAGE ########
 FROM node:16
+LABEL maintainer="daniel@woss.io" 
+LABEL description="Web service for re-hosting the git repositories using the IPFS."
+LABEL version="0.1.0"
+LABEL repository="https://github.com/woss/ipfs-rehost-web-service"
 
 RUN curl -f https://get.pnpm.io/v6.js | node - add --global pnpm
+
 
 WORKDIR /app
 

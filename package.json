@@ -1,8 +1,8 @@
 {
-  "name": "ipfs-git-rehost",
+  "name": "ipfs-rehost-web-service",
   "license": "GPL-3.0",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Web service for re-hosting the git repositories using the IPFS.",
   "scripts": {
     "build": "rimraf dist && webpack",
     "build:tsc": "tsc -b .",
