@@ -45,6 +45,8 @@ pnpm lint:fix
 
 With `docker-compose` it's easy. Run `docker-compose build rehost` and you will have the image build with all production deps installed.
 
+To build and tag the latest version run `docker-compose build rehost_latest`
+
 #### Running the service with docker
 
 The MongoDB is bundeled with, but you can use any mongodb service, just configure the `MONGODB_HOST` and `MONGODB_PORT` in your `.env` file and you are ready to go.

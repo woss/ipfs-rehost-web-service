@@ -1,7 +1,18 @@
 version: '3.4'
+# Define common behavior with https://docs.docker.com/compose/compose-file/compose-file-v3/#extension-fields
+x-rehost-web-service: &latest-rehost-service
+  env_file: .env
+  build:
+    target: base
+    context: .
+  # Other settings can also be shared
+  image: woss/rehost-service:latest
+
 services:
+  rehost_latest: *latest-rehost-service
   rehost:
-    image: woss/rehost-service:0.1.0
+    <<: *latest-rehost-service
+    image: woss/rehost-service:${REHOST_IMAGE_VERSION}
     build:
       context: .
     env_file: ./.env
