@@ -29,7 +29,18 @@ export function buildAddToQueueRoute(app: Express) {
         }
 
         const { host, username, repo } = req.params
-        const { tag: queryTag, update, branch } = req.query
+        const { tag: queryTag, update, branch, rev } = req.query
+
+        if (!isNil(rev)) {
+          throw new Error(
+            'Rehisting by revision/commit is not currently supported. Use tag instead'
+          )
+        }
+        if (!isNil(branch)) {
+          throw new Error(
+            'Rehisting by branch is not currently supported. Use tag instead'
+          )
+        }
 
         const realRepoURL = buildRepoURL({ host, username, repo })
 
@@ -99,7 +110,6 @@ export function buildAddToQueueRoute(app: Express) {
         }
         return
       } catch (error) {
-        console.log(error)
         res.status(400).json({
           error: true,
           message: error.message,
