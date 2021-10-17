@@ -63,9 +63,7 @@ export default async function configure(agenda: Agenda) {
           branch,
         })
 
-        console.time('uploadViaAddAll')
         const returnObject = await uploadViaAddAll(repoPath)
-        console.timeEnd('uploadViaAddAll')
 
         await insertRepo({
           repo: {

@@ -27,59 +27,59 @@ export function normalizeUrlPathname(pathName: string) {
  * @param repo
  * @returns
  */
-export async function gitCloneBare(options: {
-  repo: string
-  tag?: string
-  rev?: string
-  branch?: string
-  unpack?: boolean
-}) {
-  const git = simpleGit()
+// export async function gitCloneBare(options: {
+//   repo: string
+//   tag?: string
+//   rev?: string
+//   branch?: string
+//   unpack?: boolean
+// }) {
+//   const git = simpleGit()
 
-  const { repo, unpack = false, tag } = options
+//   const { repo, unpack = false, tag } = options
 
-  const url = new URL(repo)
-  const tmp = os.tmpdir()
-  const normalizedName = `${normalizeUrlPathname(url.pathname)}.git`
-  const repoPath = `${tmp}/rehost/${normalizedName}`
+//   const url = new URL(repo)
+//   const tmp = os.tmpdir()
+//   const normalizedName = `${normalizeUrlPathname(url.pathname)}.git`
+//   const repoPath = `${tmp}/rehost/${normalizedName}`
 
-  const execOptions = {
-    cwd: repoPath,
-    stdio: [0, 1, 2],
-    // stdio: 'inherit',
-    // shell: true
-  }
+//   const execOptions = {
+//     cwd: repoPath,
+//     // stdio: [0, 1, 2],
+//     stdio: 'inherit',
+//     shell: true,
+//   }
 
-  if (await exists(repoPath)) {
-    log(yellow('Removing the path', repoPath))
-    await exec(`rm -rf ${repoPath}`, execOptions)
-  }
+//   if (await exists(repoPath)) {
+//     log(yellow('Removing the path', repoPath))
+//     await exec(`rm -rf ${repoPath}`, execOptions)
+//   }
 
-  // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
+//   // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
 
-  log(yellow('Cloning the repo'), url.href, repoPath)
-  await git.clone(url.href, repoPath, ['--bare'])
+//   log(yellow('Cloning the repo'), url.href, repoPath)
+//   await git.clone(url.href, repoPath, ['--bare'])
 
-  await git.cwd({ path: repoPath, root: true })
-  await git.updateServerInfo()
-  if (!isNil(tag)) {
-    await git.fetch('origin', `refs/tags/${tag}`)
-  }
+//   await git.cwd({ path: repoPath, root: true })
+//   await git.updateServerInfo()
+//   if (!isNil(tag)) {
+//     await git.fetch('origin', `refs/tags/${tag}`)
+//   }
 
-  if (unpack) {
-    log(yellow('Unpacking ...'))
-    await exec(`mv objects/pack/*.pack .`, execOptions)
-    await exec(`cat *.pack | git unpack-objects`, execOptions)
-    // await exec(`git unpack-objects < *.pack`, execOptions)
-    await exec(`rm -f *.pack`, execOptions)
-    await exec(`rm -f objects/pack/*.idx`, execOptions)
-    log(yellow('Done unpacking.'))
-  }
+//   if (unpack) {
+//     log(yellow('Unpacking ...'))
+//     await exec(`mv objects/pack/*.pack .`, execOptions)
+//     await exec(`cat *.pack | git unpack-objects`, execOptions)
+//     // await exec(`git unpack-objects < *.pack`, execOptions)
+//     await exec(`rm -f *.pack`, execOptions)
+//     await exec(`rm -f objects/pack/*.idx`, execOptions)
+//     log(yellow('Done unpacking.'))
+//   }
 
-  return {
-    repoPath,
-  }
-}
+//   return {
+//     repoPath,
+//   }
+// }
 
 /**
  * Clone bare repo and return path
@@ -103,9 +103,9 @@ export async function gitClone(options: {
 
   const execOptions = {
     cwd: repoPath,
-    stdio: [0, 1, 2],
-    // stdio: 'inherit',
-    // shell: true
+    // stdio: [0, 1, 2],
+    stdio: 'inherit',
+    shell: true,
   }
 
   if (await exists(repoPath)) {
