@@ -54,7 +54,9 @@ export async function uploadViaAddAll(path: string) {
   console.log('Upload to IPFS started ...')
 
   for await (const file of ipfsClient.addAll(
-    globSource(path, '**/*'),
+    globSource(path, '**/*', {
+      hidden: true,
+    }),
     ipfsOptions
   )) {
     addedFiles.push({

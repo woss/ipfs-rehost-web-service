@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path')
 const nodeExternals = require('webpack-node-externals')
-const NodemonPlugin = require('nodemon-webpack-plugin') // Ding
 
 module.exports = {
   entry: './src/server.ts',
@@ -10,7 +9,7 @@ module.exports = {
     filename: 'server.js',
   },
   target: 'node',
-  mode: 'development',
+  mode: 'production',
   externals: [nodeExternals()],
   module: {
     rules: [
@@ -21,13 +20,10 @@ module.exports = {
       },
     ],
   },
-  plugins: [
-    new NodemonPlugin(), // Dong
-  ],
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
   },
   optimization: {
-    minimize: false,
+    minimize: true,
   },
 }

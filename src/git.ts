@@ -3,9 +3,10 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { yellow } from 'chalk'
 import os from 'os'
+import { isNil } from 'ramda'
 import simpleGit from 'simple-git'
 import { promisify } from 'util'
-import { repoExists } from './integrations/github'
+import { infoAboutRepo, IntegrationInfoReturn } from './integrations/github'
 
 const exec = promisify(require('child_process').exec)
 const exists = promisify(require('fs').exists)
@@ -35,12 +36,12 @@ export async function gitCloneBare(options: {
 }) {
   const git = simpleGit()
 
-  const { repo, unpack = false } = options
+  const { repo, unpack = false, tag } = options
 
   const url = new URL(repo)
   const tmp = os.tmpdir()
   const normalizedName = `${normalizeUrlPathname(url.pathname)}.git`
-  const repoPath = `${tmp}/${normalizedName}`
+  const repoPath = `${tmp}/rehost/${normalizedName}`
 
   const execOptions = {
     cwd: repoPath,
@@ -61,7 +62,9 @@ export async function gitCloneBare(options: {
 
   await git.cwd({ path: repoPath, root: true })
   await git.updateServerInfo()
-  const { latest } = await git.log({ maxCount: 1 })
+  if (!isNil(tag)) {
+    await git.fetch('origin', `refs/tags/${tag}`)
+  }
 
   if (unpack) {
     log(yellow('Unpacking ...'))
@@ -75,7 +78,59 @@ export async function gitCloneBare(options: {
 
   return {
     repoPath,
-    commit: latest,
+  }
+}
+
+/**
+ * Clone bare repo and return path
+ * @param repo
+ * @returns
+ */
+export async function gitClone(options: {
+  repo: string
+  tag?: string
+  rev?: string
+  branch?: string
+}) {
+  const git = simpleGit()
+
+  const { repo, tag, rev } = options
+
+  const url = new URL(repo)
+  const tmp = os.tmpdir()
+  const normalizedName = `${normalizeUrlPathname(url.pathname)}`
+  const repoPath = `${tmp}/rehost/${normalizedName}`
+
+  const execOptions = {
+    cwd: repoPath,
+    stdio: [0, 1, 2],
+    // stdio: 'inherit',
+    // shell: true
+  }
+
+  if (await exists(repoPath)) {
+    log(yellow('Removing the path', repoPath))
+    await exec(`rm -rf ${repoPath}`, execOptions)
+  }
+
+  // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
+
+  log(yellow('Cloning the repo'), url.href, repoPath)
+  await git.clone(url.href, repoPath)
+
+  await git.cwd({ path: repoPath, root: true })
+  await git.updateServerInfo()
+
+  if (!isNil(rev)) {
+    console.log(`Checking out the revision ${rev}`)
+    await git.checkout(rev)
+  } else if (!isNil(tag)) {
+    console.log(`Checking out the tag ${tag}`)
+    await git.checkout(tag)
+  }
+
+  return {
+    repoPath,
   }
 }
 
@@ -85,23 +140,27 @@ export enum SupportedHosts {
 }
 
 /**
- * Check does git repo exists on the host, currently github.com
+ * Take the params and get the information about the repository from the host
+ *```md
+ * * IF the repository tag is specified it will return the commit for that tag
+ * * If the tag is not specified  it will return latest tag with its commit if that tag exists
+ * * If the tag doesn't exist it will return latest commit from the default branch
+ *```
  * @param params
  * @returns
  */
-export async function checkDoesGitRepoExists(params: {
+export async function repoInformation(params: {
   username: string
   repo: string
   host: SupportedHosts
-}): Promise<{
-  exists: boolean
-  isFork?: boolean
-}> {
-  const { host, username, repo } = params
+  tag: string
+  revision?: string
+}): Promise<IntegrationInfoReturn> {
+  const { host, username, repo, tag } = params
   try {
     switch (host) {
       case SupportedHosts.GITHUB:
-        const data = await repoExists({ username, repo })
+        const data = await infoAboutRepo({ username, repo, tag })
         if (data.isFork) {
           console.log(
             'Repo is a fork, cloning it twice in row will not generate same CID'
@@ -115,10 +174,7 @@ export async function checkDoesGitRepoExists(params: {
         break
     }
   } catch (error) {
-    console.error('Error response:')
-    console.error(error.response.data) // ***
-    console.error(error.response.status) // ***
-    // console.error(error.response.headers); // ***
-    return { exists: false }
+    console.error(error)
+    throw new Error(error)
   }
 }
