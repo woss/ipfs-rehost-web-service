@@ -46,35 +46,32 @@ export function buildAddToQueueRoute(app: Express) {
         })
 
         if (mongoDocument) {
-          if (!isNil(update) && isTrue(update)) {
-            // 'we have it and should update it
-            const latestCommit = commit
-            const isHashRehosted = find(propEq('rev', latestCommit))(
-              mongoDocument.rehosted
-            )
+          const latestCommit = commit
+          const isHashRehosted = find(propEq('rev', latestCommit))(
+            mongoDocument.rehosted
+          )
 
-            if (isNil(isHashRehosted)) {
-              const job = await jobQueue.now('rehostRepo', {
-                host,
-                username,
-                repo,
-                tag,
-                rev: commit,
-                isFork,
-                branch,
-                update: true,
-                committedDate,
-              })
-              res.status(201).json({
-                apiURL: `/v1/q/${job.attrs._id}`,
-                willUpdate: true,
-              })
-            } else {
-              res.status(200).json({
-                apiURL: `/v1/repo/${mongoDocument._id}`,
-                willUpdate: false,
-              })
-            }
+          const shouldUpdate =
+            isNil(isHashRehosted) ||
+            (!isNil(update) && isTrue(update) && !isNil(isHashRehosted))
+
+          // 'we have it and should update it
+          if (shouldUpdate) {
+            const job = await jobQueue.now('rehostRepo', {
+              host,
+              username,
+              repo,
+              tag,
+              rev: commit,
+              isFork,
+              branch,
+              update: true,
+              committedDate,
+            })
+            res.status(201).json({
+              apiURL: `/v1/q/${job.attrs._id}`,
+              willUpdate: true,
+            })
           } else {
             console.log('we have it and no need to update')
             res.status(200).json({

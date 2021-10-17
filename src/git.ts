@@ -103,9 +103,9 @@ export async function gitClone(options: {
 
   const execOptions = {
     cwd: repoPath,
-    // stdio: [0, 1, 2],
-    stdio: 'inherit',
-    shell: true,
+    stdio: [0, 1, 2],
+    // stdio: 'inherit',
+    // shell: true,
   }
 
   if (await exists(repoPath)) {
@@ -114,12 +114,14 @@ export async function gitClone(options: {
   }
 
   // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
+  if (!(await exists(repoPath))) {
+    await exec(`mkdir -p ${repoPath}`)
+  }
 
-  log(yellow('Cloning the repo'), url.href, repoPath)
+  log(yellow('Cloning the repo'), url.href, repoPath, tag, rev)
   await git.clone(url.href, repoPath)
 
   await git.cwd({ path: repoPath, root: true })
-  await git.updateServerInfo()
 
   if (!isNil(rev)) {
     console.log(`Checking out the revision ${rev}`)
@@ -166,7 +168,6 @@ export async function repoInformation(params: {
             'Repo is a fork, cloning it twice in row will not generate same CID'
           )
         }
-
         return data
 
       default:

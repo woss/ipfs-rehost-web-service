@@ -1,9 +1,10 @@
 import { Agenda, Job } from 'agenda'
+import { find, propEq } from 'ramda'
 import { insertEmbedded, insertRepo, repoExists } from '../db'
-import { gitClone } from '../git'
+import { gitClone, SupportedHosts } from '../git'
 import { uploadViaAddAll } from '../ipfs'
 export interface RehostRepoParams {
-  host: string
+  host: SupportedHosts
   username: string
   repo: string
   tag?: string
@@ -33,8 +34,8 @@ export default async function configure(agenda: Agenda) {
       const realRepoURL = `https://${host}/${username}/${repo}`
 
       const mongoDocument = await repoExists(realRepoURL)
-
-      if (mongoDocument && update) {
+      const isHashRehosted = find(propEq('rev', rev))(mongoDocument.rehosted)
+      if (mongoDocument && !isHashRehosted && update) {
         const { repoPath } = await gitClone({
           repo: realRepoURL,
           rev,
@@ -42,9 +43,7 @@ export default async function configure(agenda: Agenda) {
           branch,
         })
 
-        console.time('uploadViaAddAll')
         const returnObject = await uploadViaAddAll(repoPath)
-        console.timeEnd('uploadViaAddAll')
 
         await insertEmbedded(mongoDocument._id, {
           cid: returnObject.cid,

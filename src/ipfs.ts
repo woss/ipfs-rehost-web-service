@@ -49,9 +49,9 @@ export async function uploadViaAddAll(path: string) {
   const ipfsClient: IPFSHTTPClient = createIPFSConnection()
   const { IPFS_HOSTNAME } = envs()
 
-  const addedFiles: AddedFiles[] = []
-
   log(yellow('Upload to IPFS started ...'))
+
+  const addedFiles: AddedFiles[] = []
   console.log('-------------------------')
   console.time('uploadViaAddAll')
   for await (const file of ipfsClient.addAll(
@@ -66,7 +66,6 @@ export async function uploadViaAddAll(path: string) {
       size: file.size,
     })
   }
-
   console.timeEnd('uploadViaAddAll')
   console.log('-------------------------')
 
@@ -85,3 +84,5 @@ export async function uploadViaAddAll(path: string) {
 
   return returnObject
 }
+
+// export async function uploadToMFS(path: string) { }

@@ -2,7 +2,7 @@ import fetch from 'cross-fetch'
 import { ClientError, GraphQLClient } from 'graphql-request'
 import { isEmpty, isNil } from 'ramda'
 import { envs } from '../../env'
-import { getSdk } from '../../generated/nodes'
+import { Exact, getSdk } from '../../generated/nodes'
 
 const graphqlURL = 'https://api.github.com/graphql'
 const headers = {
@@ -29,23 +29,38 @@ export interface IntegrationInfoReturn {
   tag: string | null
   commit: string
   committedDate: string
+  stars?: number
 }
+/**
+ * Ask Github Graphql API for info for this repo.
+ * @param params
+ * @returns
+ */
 export async function infoAboutRepo(
   params: BasicRepoInfo
 ): Promise<IntegrationInfoReturn> {
   const { repo, username, tag = '' } = params
   try {
     const sdk = getSdk(initClient())
-    const res = await sdk.RepoBasicInfoWithTag({
+
+    let inputParams: Exact<{
+      owner: string
+      name: string
+      tag?: string
+    }> = {
       name: repo,
       owner: username,
-      tag,
-    })
+    }
+    if (tag) {
+      inputParams = { ...inputParams, tag }
+    }
+    const res = await sdk.RepoBasicInfoWithTag(inputParams)
     const {
       repository: {
         tags: { nodes: tags },
         isFork,
         latestCommit: { target: latestCommit },
+        stargazerCount,
       },
     } = res
 
@@ -60,6 +75,7 @@ export async function infoAboutRepo(
         tag: null,
         commit: lastCommit.history.edges[0].node.hash,
         committedDate: lastCommit.history.edges[0].node.committedDate,
+        stars: stargazerCount,
       }
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,6 +86,7 @@ export async function infoAboutRepo(
         tag: tagGQL.name,
         commit: tagGQL.commit.oid,
         committedDate: tagGQL.commit.committedDate,
+        stars: stargazerCount,
       }
     }
   } catch (error) {

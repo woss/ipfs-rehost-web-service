@@ -1,6 +1,7 @@
-query RepoBasicInfoWithTag($owner: String!, $name: String!, $tag: String!) {
+query RepoBasicInfoWithTag($owner: String!, $name: String!, $tag: String) {
   repository(owner: $owner, name: $name) {
     isFork
+    stargazerCount
     tags: refs(refPrefix: "refs/tags/", last: 1, query: $tag) {
       nodes {
         __typename

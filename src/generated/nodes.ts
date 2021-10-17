@@ -21974,17 +21974,18 @@ export type WorkflowRunPendingDeploymentRequestsArgs = {
 export type RepoBasicInfoWithTagQueryVariables = Exact<{
   owner: Scalars['String'];
   name: Scalars['String'];
-  tag: Scalars['String'];
+  tag?: Maybe<Scalars['String']>;
 }>;
 
 
-export type RepoBasicInfoWithTagQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', isFork: boolean, tags?: { __typename?: 'RefConnection', nodes?: Array<{ __typename: 'Ref', target?: { __typename: 'Blob' } | { __typename: 'Commit' } | { __typename: 'Tag', name: string, commit: { __typename?: 'Blob' } | { __typename?: 'Commit', oid: any, committedDate: any } | { __typename?: 'Tag' } | { __typename?: 'Tree' } } | { __typename: 'Tree' } | null | undefined } | null | undefined> | null | undefined } | null | undefined, latestCommit?: { __typename?: 'Ref', name: string, target?: { __typename?: 'Blob' } | { __typename?: 'Commit', history: { __typename?: 'CommitHistoryConnection', edges?: Array<{ __typename?: 'CommitEdge', node?: { __typename?: 'Commit', committedDate: any, hash: any } | null | undefined } | null | undefined> | null | undefined } } | { __typename?: 'Tag' } | { __typename?: 'Tree' } | null | undefined } | null | undefined } | null | undefined };
+export type RepoBasicInfoWithTagQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', isFork: boolean, stargazerCount: number, tags?: { __typename?: 'RefConnection', nodes?: Array<{ __typename: 'Ref', target?: { __typename: 'Blob' } | { __typename: 'Commit' } | { __typename: 'Tag', name: string, commit: { __typename?: 'Blob' } | { __typename?: 'Commit', oid: any, committedDate: any } | { __typename?: 'Tag' } | { __typename?: 'Tree' } } | { __typename: 'Tree' } | null | undefined } | null | undefined> | null | undefined } | null | undefined, latestCommit?: { __typename?: 'Ref', name: string, target?: { __typename?: 'Blob' } | { __typename?: 'Commit', history: { __typename?: 'CommitHistoryConnection', edges?: Array<{ __typename?: 'CommitEdge', node?: { __typename?: 'Commit', committedDate: any, hash: any } | null | undefined } | null | undefined> | null | undefined } } | { __typename?: 'Tag' } | { __typename?: 'Tree' } | null | undefined } | null | undefined } | null | undefined };
 
 
 export const RepoBasicInfoWithTag = gql`
-    query RepoBasicInfoWithTag($owner: String!, $name: String!, $tag: String!) {
+    query RepoBasicInfoWithTag($owner: String!, $name: String!, $tag: String) {
   repository(owner: $owner, name: $name) {
     isFork
+    stargazerCount
     tags: refs(refPrefix: "refs/tags/", last: 1, query: $tag) {
       nodes {
         __typename
@@ -22024,9 +22025,10 @@ export const RepoBasicInfoWithTag = gql`
     `;
 
 export const RepoBasicInfoWithTagDocument = gql`
-    query RepoBasicInfoWithTag($owner: String!, $name: String!, $tag: String!) {
+    query RepoBasicInfoWithTag($owner: String!, $name: String!, $tag: String) {
   repository(owner: $owner, name: $name) {
     isFork
+    stargazerCount
     tags: refs(refPrefix: "refs/tags/", last: 1, query: $tag) {
       nodes {
         __typename
