@@ -180,7 +180,9 @@ export async function findLatestRehostForRepo(
   if (isNil(doc)) {
     throw new Error('This repository is not re-hosted')
   }
+  // @TODO i have no idea how to do sorting in the mongo directly, that's why i am doing it like this
   const byCommittedDate = descend(prop('committedDate'))
+  // take first item in the array, that is our newest rehost
   const latestRehost = head(sort(byCommittedDate, doc.rehosted))
 
   return latestRehost
