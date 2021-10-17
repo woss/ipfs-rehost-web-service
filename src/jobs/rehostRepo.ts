@@ -1,9 +1,10 @@
 import { Agenda, Job } from 'agenda'
+import { find, propEq } from 'ramda'
 import { insertEmbedded, insertRepo, repoExists } from '../db'
-import { gitCloneBare } from '../git'
+import { gitClone, SupportedHosts } from '../git'
 import { uploadViaAddAll } from '../ipfs'
 export interface RehostRepoParams {
-  host: string
+  host: SupportedHosts
   username: string
   repo: string
   tag?: string
@@ -11,49 +12,57 @@ export interface RehostRepoParams {
   branch?: string
   isFork?: boolean
   update: boolean
+  committedDate: string
 }
 export default async function configure(agenda: Agenda) {
   agenda.define('rehostRepo', async (job: Job<RehostRepoParams>) => {
     try {
       const {
-        data: { host, repo, username, rev, tag, isFork, update, branch },
+        data: {
+          host,
+          repo,
+          username,
+          rev,
+          tag,
+          isFork,
+          update,
+          branch,
+          committedDate,
+        },
       } = job.attrs
 
       const realRepoURL = `https://${host}/${username}/${repo}`
 
       const mongoDocument = await repoExists(realRepoURL)
-
-      if (mongoDocument && update) {
-        const { repoPath, commit } = await gitCloneBare({
+      const isHashRehosted = find(propEq('rev', rev))(mongoDocument.rehosted)
+      if (mongoDocument && !isHashRehosted && update) {
+        const { repoPath } = await gitClone({
           repo: realRepoURL,
           rev,
           tag,
           branch,
         })
 
-        console.time('uploadViaAddAll')
         const returnObject = await uploadViaAddAll(repoPath)
-        console.timeEnd('uploadViaAddAll')
 
         await insertEmbedded(mongoDocument._id, {
           cid: returnObject.cid,
           ipfsUrl: returnObject.url,
           size: returnObject.size,
-          rev: commit.hash,
+          rev,
           tag,
+          committedDate,
         })
         return returnObject
       } else {
-        const { repoPath, commit } = await gitCloneBare({
+        const { repoPath } = await gitClone({
           repo: realRepoURL,
           rev,
           tag,
           branch,
         })
 
-        console.time('uploadViaAddAll')
         const returnObject = await uploadViaAddAll(repoPath)
-        console.timeEnd('uploadViaAddAll')
 
         await insertRepo({
           repo: {
@@ -68,8 +77,9 @@ export default async function configure(agenda: Agenda) {
               cid: returnObject.cid,
               ipfsUrl: returnObject.url,
               size: returnObject.size,
-              rev: commit.hash,
+              rev,
               tag,
+              committedDate,
             },
           ],
           createdAt: Date.now(),

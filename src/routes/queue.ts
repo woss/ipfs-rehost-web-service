@@ -4,9 +4,8 @@ import { IPFSHTTPClient } from 'ipfs-http-client'
 import { ObjectId } from 'mongodb'
 import { find, isNil, propEq } from 'ramda'
 import { dbConnection } from '../db'
-import { checkDoesGitRepoExists, SupportedHosts } from '../git'
-import { latestCommitForDefaultBranch } from '../integrations/github'
-import { buildRepoURL } from '../util'
+import { repoInformation, SupportedHosts } from '../git'
+import { buildRepoURL, isTrue } from '../util'
 import jobQueue from '../worker'
 export function buildAddToQueueRoute(app: Express) {
   /**
@@ -24,89 +23,97 @@ export function buildAddToQueueRoute(app: Express) {
       res
     ) => {
       const ipfsClient: IPFSHTTPClient = app.get('ipfsClient')
+      try {
+        if (!ipfsClient.isOnline()) {
+          throw new Error('IPFS is not connected')
+        }
 
-      if (!ipfsClient.isOnline()) {
-        res.status(400).json({ error: true, message: 'IPFS is not connected' })
-        return
-      }
+        const { host, username, repo } = req.params
+        const { tag: queryTag, update, branch, rev } = req.query
 
-      const { host, username, repo } = req.params
-      const { tag, rev, update, branch } = req.query
+        if (!isNil(rev)) {
+          throw new Error(
+            'Rehisting by revision/commit is not currently supported. Use tag instead'
+          )
+        }
+        if (!isNil(branch)) {
+          throw new Error(
+            'Rehisting by branch is not currently supported. Use tag instead'
+          )
+        }
 
-      const realRepoURL = buildRepoURL({ host, username, repo })
+        const realRepoURL = buildRepoURL({ host, username, repo })
 
-      const mongoDocument = await dbConnection
-        .collection('repos')
-        .findOne({ repoUrl: realRepoURL })
+        const mongoDocument = await dbConnection
+          .collection('repos')
+          .findOne({ repoUrl: realRepoURL })
 
-      if (!mongoDocument) {
-        const existsOnHost = await checkDoesGitRepoExists({
+        // this will fail and be caught if the rpo doesn't exist, or when providing a tag, that tag doesn't exist
+        const { commit, isFork, tag, committedDate } = await repoInformation({
           host: host,
           username,
           repo,
+          tag: queryTag,
         })
 
-        if (!existsOnHost.exists) {
-          res.status(404).json({
-            error: true,
-            message:
-              'Repository not found. Check the repo name or user. Repo name cannot end with .git',
-          })
-        } else {
-          const job = await jobQueue.now('rehostRepo', {
-            host,
-            username,
-            repo,
-            tag,
-            rev,
-            branch,
-            isFork: existsOnHost.isFork,
-            update: false,
-          })
-
-          res.status(201).json({
-            apiURL: `/v1/q/${job.attrs._id}`,
-            willUpdate: true,
-          })
-        }
-      } else {
-        if (!isNil(update) && (update === 'true' || update === '1')) {
-          const latestCommitResponse = await latestCommitForDefaultBranch({
-            repo,
-            username,
-          })
-          const latestCommit =
-            latestCommitResponse.data.repository.defaultBranchRef.target.history
-              .edges[0].node.hash
+        if (mongoDocument) {
+          const latestCommit = commit
           const isHashRehosted = find(propEq('rev', latestCommit))(
             mongoDocument.rehosted
           )
-          if (isNil(isHashRehosted)) {
+
+          const shouldUpdate =
+            isNil(isHashRehosted) ||
+            (!isNil(update) && isTrue(update) && !isNil(isHashRehosted))
+
+          // 'we have it and should update it
+          if (shouldUpdate) {
             const job = await jobQueue.now('rehostRepo', {
               host,
               username,
               repo,
               tag,
-              rev,
+              rev: commit,
+              isFork,
               branch,
               update: true,
+              committedDate,
             })
             res.status(201).json({
               apiURL: `/v1/q/${job.attrs._id}`,
               willUpdate: true,
             })
           } else {
+            console.log('we have it and no need to update')
             res.status(200).json({
               apiURL: `/v1/repo/${mongoDocument._id}`,
               willUpdate: false,
             })
           }
         } else {
-          res.status(200).json({
-            apiURL: `/v1/repo/${mongoDocument._id}`,
-            willUpdate: false,
+          console.log('we do not have it')
+          const job = await jobQueue.now('rehostRepo', {
+            host,
+            username,
+            repo,
+            tag,
+            rev: commit,
+            isFork,
+            branch,
+            update: false,
+            committedDate,
+          })
+          res.status(201).json({
+            apiURL: `/v1/q/${job.attrs._id}`,
+            willUpdate: true,
           })
         }
+        return
+      } catch (error) {
+        res.status(400).json({
+          error: true,
+          message: error.message,
+        })
       }
     }
   )

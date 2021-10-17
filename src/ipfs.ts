@@ -1,9 +1,9 @@
-import { blue, green } from 'chalk'
+import { blue, green, yellow } from 'chalk'
 import { Express } from 'express'
 import type { AddAllOptions } from 'ipfs-core-types/src/root'
 import { create, globSource, IPFSHTTPClient } from 'ipfs-http-client'
+import rimraf from 'rimraf'
 import { envs } from './env'
-
 const log = console.log
 
 export let ipfsClient: IPFSHTTPClient | null = null
@@ -49,13 +49,16 @@ export async function uploadViaAddAll(path: string) {
   const ipfsClient: IPFSHTTPClient = createIPFSConnection()
   const { IPFS_HOSTNAME } = envs()
 
+  log(yellow('Upload to IPFS started ...'))
+
   const addedFiles: AddedFiles[] = []
-
-  console.log('Upload to IPFS started ...')
-
+  console.log('-------------------------')
+  console.time('uploadViaAddAll')
   for await (const file of ipfsClient.addAll(
-    globSource(path, '**/*'),
-    ipfsOptions
+    globSource(path, '**/*', {
+      hidden: true,
+    }),
+    { ...ipfsOptions, fileImportConcurrency: 50 }
   )) {
     addedFiles.push({
       cid: file.cid.toString(),
@@ -63,6 +66,9 @@ export async function uploadViaAddAll(path: string) {
       size: file.size,
     })
   }
+  console.timeEnd('uploadViaAddAll')
+  console.log('-------------------------')
+
   const lastCid = addedFiles[addedFiles.length - 1]
 
   const returnObject = {
@@ -71,6 +77,12 @@ export async function uploadViaAddAll(path: string) {
     size: lastCid.size,
     url: `https://${IPFS_HOSTNAME}/ipfs/${lastCid.cid}`,
   }
+  log(green('Removing the repo from fs'))
+  rimraf.sync(path)
+
   log(green('Done 🎉\n'))
+
   return returnObject
 }
+
+// export async function uploadToMFS(path: string) { }

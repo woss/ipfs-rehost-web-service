@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { Express, Request } from 'express'
-import { dbConnection, findRepo } from '../db'
+import { dbConnection, findLatestRehostForRepo, findRepo } from '../db'
 
 /**
  * Setup /v1/repo routes
@@ -40,6 +40,24 @@ export function repositoryRoutes(app: Express) {
     const { id } = req.params
     try {
       const doc = await findRepo(id)
+
+      if (!doc) {
+        throw new Error('Repository not found')
+      } else {
+        res.json(doc)
+      }
+    } catch (error) {
+      console.log(error.message)
+      res.status(404).json({ error: true, message: error.message })
+    }
+  })
+  /**
+   * get only one repo
+   */
+  app.get('/v1/repo/:id/latest_rehost', async (req, res) => {
+    const { id } = req.params
+    try {
+      const doc = await findLatestRehostForRepo(id)
 
       if (!doc) {
         throw new Error('Repository not found')

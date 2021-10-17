@@ -1,7 +1,7 @@
 import { blue } from 'chalk'
 import { Express } from 'express'
 import { Db, MongoClient, ObjectId } from 'mongodb'
-import { find, isNil, propEq } from 'ramda'
+import { descend, find, head, isNil, prop, propEq, sort } from 'ramda'
 import { envs } from './env'
 export const dbName = 'ipfs-rehost'
 export let mongoClient: MongoClient = null
@@ -52,6 +52,7 @@ export interface RehostedEmbedded {
   rev: string
   tag: string
   size: number
+  committedDate: string
 }
 export interface RepositoryInfo {
   name: string
@@ -159,4 +160,30 @@ export async function findRepo(id: string): Promise<MongoRepositoryDocument> {
     throw new Error('This repository is not re-hosted')
   }
   return doc
+}
+
+/**
+ * Find and return latest re-hosted repository and its version
+ * @param url
+ * @returns
+ */
+export async function findLatestRehostForRepo(
+  id: string
+): Promise<RehostedEmbedded> {
+  const db = await getDB()
+  const doc = await db.collection('repos').findOne<MongoRepositoryDocument>(
+    {
+      _id: new ObjectId(id),
+    },
+    { projection: { rehosted: 1 } }
+  )
+  if (isNil(doc)) {
+    throw new Error('This repository is not re-hosted')
+  }
+  // @TODO i have no idea how to do sorting in the mongo directly, that's why i am doing it like this
+  const byCommittedDate = descend(prop('committedDate'))
+  // take first item in the array, that is our newest rehost
+  const latestRehost = head(sort(byCommittedDate, doc.rehosted))
+
+  return latestRehost
 }

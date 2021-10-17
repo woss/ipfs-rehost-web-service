@@ -1,0 +1,40 @@
+query RepoBasicInfoWithTag($owner: String!, $name: String!, $tag: String) {
+  repository(owner: $owner, name: $name) {
+    isFork
+    stargazerCount
+    tags: refs(refPrefix: "refs/tags/", last: 1, query: $tag) {
+      nodes {
+        __typename
+        target {
+          __typename
+          ... on Tag {
+            name
+            commit: target {
+              ... on Commit {
+                oid
+                committedDate
+              }
+            }
+          }
+        }
+      }
+    }
+    latestCommit: defaultBranchRef {
+      name
+      target {
+        ... on Commit {
+          history(first: 1) {
+            edges {
+              node {
+                ... on Commit {
+                  hash: oid
+                  committedDate
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
