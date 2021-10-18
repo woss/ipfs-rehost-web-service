@@ -1,5 +1,5 @@
 import { Agenda, Job } from 'agenda'
-import { find, propEq } from 'ramda'
+import { find, isNil, propEq } from 'ramda'
 import { insertEmbedded, insertRepo, repoExists } from '../db'
 import { gitClone, SupportedHosts } from '../git'
 import { uploadViaAddAll } from '../ipfs'
@@ -34,26 +34,34 @@ export default async function configure(agenda: Agenda) {
       const realRepoURL = `https://${host}/${username}/${repo}`
 
       const mongoDocument = await repoExists(realRepoURL)
-      const isHashRehosted = find(propEq('rev', rev))(mongoDocument.rehosted)
-      if (mongoDocument && !isHashRehosted && update) {
-        const { repoPath } = await gitClone({
-          repo: realRepoURL,
-          rev,
-          tag,
-          branch,
-        })
 
-        const returnObject = await uploadViaAddAll(repoPath)
+      if (mongoDocument) {
+        const isHashRehosted = find(propEq('rev', rev))(mongoDocument.rehosted)
 
-        await insertEmbedded(mongoDocument._id, {
-          cid: returnObject.cid,
-          ipfsUrl: returnObject.url,
-          size: returnObject.size,
-          rev,
-          tag,
-          committedDate,
-        })
-        return returnObject
+        const shouldUpdate =
+          isNil(isHashRehosted) ||
+          (!isNil(update) && update && !isNil(isHashRehosted))
+        // 'we have it and should update it
+        if (shouldUpdate) {
+          const { repoPath } = await gitClone({
+            repo: realRepoURL,
+            rev,
+            tag,
+            branch,
+          })
+
+          const returnObject = await uploadViaAddAll(repoPath)
+
+          await insertEmbedded(mongoDocument._id, {
+            cid: returnObject.cid,
+            ipfsUrl: returnObject.url,
+            size: returnObject.size,
+            rev,
+            tag,
+            committedDate,
+          })
+          return returnObject
+        }
       } else {
         const { repoPath } = await gitClone({
           repo: realRepoURL,
