@@ -3,7 +3,6 @@ version: '3.4'
 x-rehost-web-service: &latest-rehost-service
   env_file: .env
   build:
-    target: base
     context: .
   # Other settings can also be shared
   image: woss/rehost-service:latest
@@ -14,9 +13,12 @@ services:
     <<: *latest-rehost-service
     image: woss/rehost-service:${REHOST_IMAGE_VERSION}
     build:
+      target: main
       context: .
     env_file: ./.env
     restart: unless-stopped
+    environment:
+      - MONGODB_HOST=mongodb
     depends_on:
       - mongodb
     ports:
