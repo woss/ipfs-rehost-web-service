@@ -13,6 +13,23 @@ const exists = promisify(require('fs').exists)
 
 const log = console.log
 
+export interface IGitCloneOptions {
+  repo: string
+  tag?: string
+  rev?: string
+  branch?: string
+}
+export interface IGitCloneBareOptions {
+  repo: string
+  branch?: string
+  unpack?: boolean
+}
+
+export interface IGitCloneReturn {
+  repoPath: string
+  repoPathWithoutGit: string
+}
+
 /**
  * Normalize Repository to be in a format `username_repo-name`
  * @param pathName
@@ -27,74 +44,77 @@ export function normalizeUrlPathname(pathName: string) {
  * @param repo
  * @returns
  */
-// export async function gitCloneBare(options: {
-//   repo: string
-//   tag?: string
-//   rev?: string
-//   branch?: string
-//   unpack?: boolean
-// }) {
-//   const git = simpleGit()
+export async function gitCloneBare(
+  options: IGitCloneBareOptions
+): Promise<IGitCloneReturn> {
+  const git = simpleGit()
 
-//   const { repo, unpack = false, tag } = options
+  console.log('gitCloneBare got options', options)
 
-//   const url = new URL(repo)
-//   const tmp = os.tmpdir()
-//   const normalizedName = `${normalizeUrlPathname(url.pathname)}.git`
-//   const repoPath = `${tmp}/rehost/${normalizedName}`
+  const { repo, unpack = false, branch } = options
 
-//   const execOptions = {
-//     cwd: repoPath,
-//     // stdio: [0, 1, 2],
-//     stdio: 'inherit',
-//     shell: true,
-//   }
+  const url = new URL(repo)
+  const tmp = os.tmpdir()
+  const normalizedName = `${normalizeUrlPathname(url.pathname)}.git`
+  const repoPath = `${tmp}/rehost/${normalizedName}`
 
-//   if (await exists(repoPath)) {
-//     log(yellow('Removing the path', repoPath))
-//     await exec(`rm -rf ${repoPath}`, execOptions)
-//   }
+  const execOptions = {
+    cwd: repoPath,
+    stdio: [0, 1, 2],
+    // stdio: 'inherit',
+    // shell: true,
+  }
 
-//   // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
+  if (await exists(repoPath)) {
+    log(yellow('Removing the path', repoPath))
+    await exec(`rm -rf ${repoPath}`, execOptions)
+  }
 
-//   log(yellow('Cloning the repo'), url.href, repoPath)
-//   await git.clone(url.href, repoPath, ['--bare'])
+  // for some reason the failed jobs cannot create the empty dir
+  if (!(await exists(repoPath))) {
+    await exec(`mkdir -p ${repoPath}`)
+  }
 
-//   await git.cwd({ path: repoPath, root: true })
-//   await git.updateServerInfo()
-//   if (!isNil(tag)) {
-//     await git.fetch('origin', `refs/tags/${tag}`)
-//   }
+  // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
 
-//   if (unpack) {
-//     log(yellow('Unpacking ...'))
-//     await exec(`mv objects/pack/*.pack .`, execOptions)
-//     await exec(`cat *.pack | git unpack-objects`, execOptions)
-//     // await exec(`git unpack-objects < *.pack`, execOptions)
-//     await exec(`rm -f *.pack`, execOptions)
-//     await exec(`rm -f objects/pack/*.idx`, execOptions)
-//     log(yellow('Done unpacking.'))
-//   }
+  log(yellow('Cloning the repo'), url.href, repoPath)
+  await git.clone(url.href, repoPath, ['--bare'])
 
-//   return {
-//     repoPath,
-//   }
-// }
+  await git.cwd({ path: repoPath, root: true })
+  await git.updateServerInfo()
+
+  if (!isNil(branch)) {
+    console.log(`Checking out the branch ${branch}`)
+    await exec(`git symbolic-ref HEAD refs/heads/${branch.trim()}`, execOptions)
+  }
+
+  if (unpack) {
+    log(yellow('Unpacking ...'))
+    await exec(`mv objects/pack/*.pack .`, execOptions)
+    await exec(`cat *.pack | git unpack-objects`, execOptions)
+    // await exec(`git unpack-objects < *.pack`, execOptions)
+    await exec(`rm -f *.pack`, execOptions)
+    await exec(`rm -f objects/pack/*.idx`, execOptions)
+    log(yellow('Done unpacking.'))
+  }
+
+  return {
+    repoPathWithoutGit: repoPath,
+    repoPath: repoPath,
+  }
+}
 
 /**
  * Clone bare repo and return path
  * @param repo
  * @returns
  */
-export async function gitClone(options: {
-  repo: string
-  tag?: string
-  rev?: string
-  branch?: string
-}) {
+export async function gitClone(
+  options: IGitCloneOptions
+): Promise<IGitCloneReturn> {
   const git = simpleGit()
 
-  const { repo, tag, rev } = options
+  const { repo, tag, rev, branch } = options
 
   const url = new URL(repo)
   const tmp = os.tmpdir()
@@ -114,6 +134,7 @@ export async function gitClone(options: {
   }
 
   // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
+  // for some reason the failed jobs cannot create the empty dir
   if (!(await exists(repoPath))) {
     await exec(`mkdir -p ${repoPath}`)
   }
@@ -124,15 +145,26 @@ export async function gitClone(options: {
   await git.cwd({ path: repoPath, root: true })
 
   if (!isNil(rev)) {
-    console.log(`Checking out the revision ${rev}`)
-    await git.checkout(rev)
+    console.log(`Resseting HARD the revision ${rev}`)
+    // await git.reset(ResetMode.HARD, [rev])
+    await exec(`git reset --hard ${rev.trim()}`, execOptions)
+    await git.log()
   } else if (!isNil(tag)) {
     console.log(`Checking out the tag ${tag}`)
     await git.checkout(tag)
+  } else if (!isNil(branch)) {
+    console.log(`Checking out the branch ${branch}`)
+    await git.checkout(branch)
   }
 
+  await exec(`git config --bool core.bare true`, execOptions)
+  // this is needed since we are going to upload the .git directory
+  await exec(`git update-server-info`, execOptions)
+  // await git.updateServerInfo()
+
   return {
-    repoPath,
+    repoPathWithoutGit: repoPath,
+    repoPath: `${repoPath}/.git`,
   }
 }
 

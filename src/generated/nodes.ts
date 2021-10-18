@@ -21978,7 +21978,7 @@ export type RepoBasicInfoWithTagQueryVariables = Exact<{
 }>;
 
 
-export type RepoBasicInfoWithTagQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', isFork: boolean, stargazerCount: number, tags?: { __typename?: 'RefConnection', nodes?: Array<{ __typename: 'Ref', target?: { __typename: 'Blob' } | { __typename: 'Commit' } | { __typename: 'Tag', name: string, commit: { __typename?: 'Blob' } | { __typename?: 'Commit', oid: any, committedDate: any } | { __typename?: 'Tag' } | { __typename?: 'Tree' } } | { __typename: 'Tree' } | null | undefined } | null | undefined> | null | undefined } | null | undefined, latestCommit?: { __typename?: 'Ref', name: string, target?: { __typename?: 'Blob' } | { __typename?: 'Commit', history: { __typename?: 'CommitHistoryConnection', edges?: Array<{ __typename?: 'CommitEdge', node?: { __typename?: 'Commit', committedDate: any, hash: any } | null | undefined } | null | undefined> | null | undefined } } | { __typename?: 'Tag' } | { __typename?: 'Tree' } | null | undefined } | null | undefined } | null | undefined };
+export type RepoBasicInfoWithTagQuery = { __typename?: 'Query', repository?: { __typename?: 'Repository', isFork: boolean, stargazerCount: number, tags?: { __typename?: 'RefConnection', nodes?: Array<{ __typename?: 'Ref', target?: { __typename?: 'Blob', oid: any } | { __typename?: 'Commit', committedDate: any, oid: any } | { __typename?: 'Tag', oid: any } | { __typename?: 'Tree', oid: any } | null | undefined } | null | undefined> | null | undefined } | null | undefined, latestCommitDefaultBranch?: { __typename?: 'Ref', name: string, target?: { __typename?: 'Blob' } | { __typename?: 'Commit', history: { __typename?: 'CommitHistoryConnection', edges?: Array<{ __typename?: 'CommitEdge', node?: { __typename?: 'Commit', oid: any, committedDate: any } | null | undefined } | null | undefined> | null | undefined } } | { __typename?: 'Tag' } | { __typename?: 'Tree' } | null | undefined } | null | undefined } | null | undefined };
 
 
 export const RepoBasicInfoWithTag = gql`
@@ -21988,22 +21988,15 @@ export const RepoBasicInfoWithTag = gql`
     stargazerCount
     tags: refs(refPrefix: "refs/tags/", last: 1, query: $tag) {
       nodes {
-        __typename
         target {
-          __typename
-          ... on Tag {
-            name
-            commit: target {
-              ... on Commit {
-                oid
-                committedDate
-              }
-            }
+          oid
+          ... on Commit {
+            committedDate
           }
         }
       }
     }
-    latestCommit: defaultBranchRef {
+    latestCommitDefaultBranch: defaultBranchRef {
       name
       target {
         ... on Commit {
@@ -22011,7 +22004,7 @@ export const RepoBasicInfoWithTag = gql`
             edges {
               node {
                 ... on Commit {
-                  hash: oid
+                  oid
                   committedDate
                 }
               }
@@ -22031,22 +22024,15 @@ export const RepoBasicInfoWithTagDocument = gql`
     stargazerCount
     tags: refs(refPrefix: "refs/tags/", last: 1, query: $tag) {
       nodes {
-        __typename
         target {
-          __typename
-          ... on Tag {
-            name
-            commit: target {
-              ... on Commit {
-                oid
-                committedDate
-              }
-            }
+          oid
+          ... on Commit {
+            committedDate
           }
         }
       }
     }
-    latestCommit: defaultBranchRef {
+    latestCommitDefaultBranch: defaultBranchRef {
       name
       target {
         ... on Commit {
@@ -22054,7 +22040,7 @@ export const RepoBasicInfoWithTagDocument = gql`
             edges {
               node {
                 ... on Commit {
-                  hash: oid
+                  oid
                   committedDate
                 }
               }
