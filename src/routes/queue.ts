@@ -1,9 +1,15 @@
 /* eslint-disable @typescript-eslint/ban-types */
+import { yellow } from 'chalk'
 import { Express, Request } from 'express'
 import { IPFSHTTPClient } from 'ipfs-http-client'
 import { ObjectId } from 'mongodb'
 import { find, isNil, propEq } from 'ramda'
-import { dbConnection, MongoRepositoryDocument } from '../db'
+import {
+  dbConnection,
+  MongoRepositoryDocument,
+  RehostedEmbedded,
+  updateEmbedded,
+} from '../db'
 import { repoInformation, SupportedHosts } from '../git'
 import { buildRepoURL, isTrue } from '../util'
 import jobQueue from '../worker'
@@ -36,11 +42,6 @@ export function buildAddToQueueRoute(app: Express) {
           rev: requestedRevision,
         } = req.query
 
-        // if (!isNil(rev)) {
-        //   throw new Error(
-        //     'Re-hosting by revision/commit is not currently supported. Use tag instead'
-        //   )
-        // }
         if (!isNil(requestedBranch)) {
           throw new Error(
             'Re-hsting by branch is not currently supported. Use tag instead'
@@ -65,14 +66,32 @@ export function buildAddToQueueRoute(app: Express) {
           ? requestedRevision
           : latestCommit.commit
 
-        const actualTag = !isNil(requestedTag) ? requestedTag : tag
+        const actualTag =
+          !isNil(requestedTag) && isNil(tag) ? requestedTag : tag
 
         const actualBranch = !isNil(requestedBranch) ? requestedBranch : ''
+        console.log({ isFork, tag, latestCommit })
+        // throw new Error('s')
 
         if (mongoDocument) {
           const isHashRehosted = find(propEq('rev', actualRevision))(
             mongoDocument.rehosted
-          )
+          ) as RehostedEmbedded
+
+          if (
+            !isNil(isHashRehosted) &&
+            !isNil(actualTag) &&
+            isNil(isHashRehosted.tag)
+          ) {
+            console.log(
+              yellow('Update the tag for the revision we already have')
+            )
+            await updateEmbedded(
+              new ObjectId(mongoDocument._id),
+              isHashRehosted.cid,
+              { ...isHashRehosted, tag: actualTag }
+            )
+          }
 
           const shouldUpdate =
             isNil(isHashRehosted) ||

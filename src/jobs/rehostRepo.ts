@@ -91,7 +91,6 @@ export default async function configure(agenda: Agenda) {
             },
           ],
           createdAt: Date.now(),
-          updatedAt: Date.now(),
         })
 
         return returnObject

@@ -92,7 +92,7 @@ export async function infoAboutRepo(
       }
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tagGQL = tags[0].target as any
+      const tagGQL = tags[0] as any
       if (isNil(tagGQL)) {
         throw new Error('No commits found for this request, check logs.')
       }
@@ -100,8 +100,8 @@ export async function infoAboutRepo(
         isFork,
         tag: tagGQL.name,
         latestCommit: {
-          commit: tagGQL.oid,
-          committedDate: tagGQL.committedDate,
+          commit: tagGQL.target.oid,
+          committedDate: tagGQL.target.committedDate,
         },
         stars: stargazerCount,
       }

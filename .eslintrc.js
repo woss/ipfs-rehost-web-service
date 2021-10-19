@@ -20,10 +20,20 @@ module.exports = {
   },
   plugins: ['@typescript-eslint', 'prettier', 'import'],
   rules: {
-    'prettier/prettier': 'error',
+    // 'comma-dangle': [
+    //   'warning',
+    //   {
+    //     arrays: 'always-multiline',
+    //     objects: 'always-multiline',
+    //     imports: 'always-multiline',
+    //     exports: 'always-multiline',
+    //     functions: 'always-multiline',
+    //   },
+    // ],
     'no-unused-vars': [
       'error',
       { vars: 'all', args: 'after-used', ignoreRestSiblings: false },
     ],
+    'prettier/prettier': 'error',
   },
 }

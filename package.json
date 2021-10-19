@@ -8,7 +8,7 @@
     "build:tsc": "tsc -b .",
     "start": " docker-compose up -d mongodb && webpack --watch",
     "lint:prettier": "prettier --config .prettierrc --write .",
-    "lint:eslint": "eslint --ext .js,.ts .",
+    "lint:eslint": "eslint --fix  --ext.js,.ts .",
     "lint:fix": "pnpm lint:prettier; pnpm lint:eslint",
     "codegen:build": "yarn codegen && tsc -b .",
     "codegen:watch": "yarn codegen --watch",
