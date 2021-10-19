@@ -1,7 +1,7 @@
 import { Agenda, Job } from 'agenda'
 import { find, isNil, propEq } from 'ramda'
 import { insertEmbedded, insertRepo, repoExists } from '../db'
-import { gitClone, SupportedHosts } from '../git'
+import { gitCloneBare, SupportedHosts } from '../git'
 import { uploadViaAddAll } from '../ipfs'
 export interface RehostRepoParams {
   host: SupportedHosts
@@ -43,7 +43,7 @@ export default async function configure(agenda: Agenda) {
           (!isNil(update) && update && !isNil(isHashRehosted))
         // 'we have it and should update it
         if (shouldUpdate) {
-          const { repoPath } = await gitClone({
+          const { repoPath } = await gitCloneBare({
             repo: realRepoURL,
             rev,
             tag,
@@ -63,7 +63,7 @@ export default async function configure(agenda: Agenda) {
           return returnObject
         }
       } else {
-        const { repoPath } = await gitClone({
+        const { repoPath } = await gitCloneBare({
           repo: realRepoURL,
           rev,
           tag,

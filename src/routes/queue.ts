@@ -67,9 +67,7 @@ export function buildAddToQueueRoute(app: Express) {
 
         const actualTag = !isNil(requestedTag) ? requestedTag : tag
 
-        const actualBranch = !isNil(requestedBranch)
-          ? requestedBranch
-          : latestCommit.branch
+        const actualBranch = !isNil(requestedBranch) ? requestedBranch : ''
 
         if (mongoDocument) {
           const isHashRehosted = find(propEq('rev', actualRevision))(

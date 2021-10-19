@@ -81,8 +81,6 @@ export async function infoAboutRepo(
     const lastCommit = latestCommit as any
 
     if (isEmpty(tags)) {
-      console.log(`This repo does not have tag ${tag}`)
-
       return {
         isFork,
         tag: null,

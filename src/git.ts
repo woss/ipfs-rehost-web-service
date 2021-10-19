@@ -19,9 +19,7 @@ export interface IGitCloneOptions {
   rev?: string
   branch?: string
 }
-export interface IGitCloneBareOptions {
-  repo: string
-  branch?: string
+export interface IGitCloneBareOptions extends IGitCloneOptions {
   unpack?: boolean
 }
 
@@ -51,7 +49,7 @@ export async function gitCloneBare(
 
   console.log('gitCloneBare got options', options)
 
-  const { repo, unpack = false, branch } = options
+  const { repo, unpack = false, branch, rev } = options
 
   const url = new URL(repo)
   const tmp = os.tmpdir()
@@ -77,13 +75,19 @@ export async function gitCloneBare(
 
   // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
 
-  log(yellow('Cloning the repo'), url.href, repoPath)
-  await git.clone(url.href, repoPath, ['--bare'])
+  log(yellow('Cloning the bare repo'), url.href, repoPath)
+  console.log(await git.clone(url.href, repoPath, ['--bare']))
 
   await git.cwd({ path: repoPath, root: true })
   await git.updateServerInfo()
 
-  if (!isNil(branch)) {
+  if (!isNil(rev)) {
+    console.log(`Reseting to the revision ${rev}`)
+    /**
+     * this is the ONLY way i figured how to make a commit a HEAD!
+     */
+    await exec(`echo ${rev} > HEAD`, execOptions)
+  } else if (!isNil(branch)) {
     console.log(`Checking out the branch ${branch}`)
     await exec(`git symbolic-ref HEAD refs/heads/${branch.trim()}`, execOptions)
   }
@@ -105,13 +109,14 @@ export async function gitCloneBare(
 }
 
 /**
- * Clone bare repo and return path
+ * Clone repo and return path
  * @param repo
  * @returns
  */
 export async function gitClone(
   options: IGitCloneOptions
 ): Promise<IGitCloneReturn> {
+  console.error('NOT NOW, use other one')
   const git = simpleGit()
 
   const { repo, tag, rev, branch } = options
@@ -145,10 +150,8 @@ export async function gitClone(
   await git.cwd({ path: repoPath, root: true })
 
   if (!isNil(rev)) {
-    console.log(`Resseting HARD the revision ${rev}`)
     // await git.reset(ResetMode.HARD, [rev])
     await exec(`git reset --hard ${rev.trim()}`, execOptions)
-    await git.log()
   } else if (!isNil(tag)) {
     console.log(`Checking out the tag ${tag}`)
     await git.checkout(tag)
