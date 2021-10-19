@@ -84,7 +84,8 @@ export async function gitCloneBare(
   if (!isNil(rev)) {
     console.log(`Reseting to the revision ${rev}`)
     /**
-     * this is the ONLY way i figured how to make a commit a HEAD!
+     * this is the one  way i figured how to make a commit a HEAD!
+     * other one is `git update-ref refs/heads/rehosted 20888c33cd0f6f897703198199f33369cba8639a` but that will not end up in the detached state. maybe that is what we need .... hmmm .....
      */
     await exec(`echo ${rev} > HEAD`, execOptions)
   } else if (!isNil(branch)) {
@@ -159,11 +160,6 @@ export async function gitClone(
     console.log(`Checking out the branch ${branch}`)
     await git.checkout(branch)
   }
-
-  await exec(`git config --bool core.bare true`, execOptions)
-  // this is needed since we are going to upload the .git directory
-  await exec(`git update-server-info`, execOptions)
-  // await git.updateServerInfo()
 
   return {
     repoPathWithoutGit: repoPath,
