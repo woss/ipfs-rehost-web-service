@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 require('dotenv').config()
+import compression from 'compression'
 import express, { Express } from 'express'
 import { MongoClient } from 'mongodb'
 import { setupMongoDB } from './db'
@@ -9,6 +10,7 @@ import { buildAddToQueueRoute, buildInfoRoute } from './routes/queue'
 import { rehostRoutes } from './routes/rehost'
 import { repositoryRoutes } from './routes/repos'
 import './worker'
+
 verifyEnv()
 
 export let app: Express | null = null
@@ -23,6 +25,8 @@ export async function createApp() {
 
   // create express app
   app = express()
+
+  app.use(compression())
 
   app.set('ipfs_protocol', protocol)
   app.set('ipfs_host', host)
