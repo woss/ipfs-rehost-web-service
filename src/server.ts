@@ -2,6 +2,7 @@
 require('dotenv').config()
 import compression from 'compression'
 import express, { Express } from 'express'
+import slowDown from 'express-slow-down'
 import { MongoClient } from 'mongodb'
 import { setupMongoDB } from './db'
 import { envs, verifyEnv } from './env'
@@ -27,6 +28,19 @@ export async function createApp() {
   app = express()
 
   app.use(compression())
+
+  const speedLimiter = slowDown({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    delayAfter: 10000, // allow 10000  requests per 15 minutes, then...
+    delayMs: 500, // begin adding 500ms of delay per request above 100:
+    // request # 101 is delayed by  500ms
+    // request # 102 is delayed by 1000ms
+    // request # 103 is delayed by 1500ms
+    // etc.
+  })
+
+  //  apply to all requests
+  app.use(speedLimiter)
 
   app.set('ipfs_protocol', protocol)
   app.set('ipfs_host', host)
