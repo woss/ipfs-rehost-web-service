@@ -7,6 +7,8 @@ const log = console.log
 
 export let ipfsClient: IPFSHTTPClient | null = null
 
+const { IPFS_API_PORT, IPFS_API_IP, IPFS_PIN } = envs()
+
 export const ipfsOptions: AddAllOptions = {
   cidVersion: 1,
   wrapWithDirectory: true, // this is important when adding with the httpClient. it behaves differently than the cli where cli will wrap it in the name of the dir, this doesn't do that
@@ -14,14 +16,13 @@ export const ipfsOptions: AddAllOptions = {
   progress: (bytes: number, path: string) => {
     console.log(path, bytes)
   },
-  pin: false,
+  pin: IPFS_PIN,
 }
 
 export function createIPFSConnection(app?: Express) {
   if (ipfsClient) {
     return ipfsClient
   }
-  const { IPFS_API_PORT, IPFS_API_IP } = envs()
   ipfsClient = create({
     host: IPFS_API_IP,
     port: IPFS_API_PORT,

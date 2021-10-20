@@ -1,9 +1,11 @@
 import { dbName } from './db'
+import { isTrue } from './util'
 
 export function verifyEnv() {
   const {
     REHOST_SERVICE_PORT,
     IPFS_API_IP,
+    IPFS_PIN,
     IPFS_HOSTNAME,
     IPFS_API_PORT,
     IPFS_API_PROTOCOL,
@@ -15,6 +17,7 @@ export function verifyEnv() {
   if (
     !REHOST_SERVICE_PORT ||
     !IPFS_API_PORT ||
+    !IPFS_PIN ||
     !IPFS_API_PROTOCOL ||
     !IPFS_API_IP ||
     !IPFS_HOSTNAME ||
@@ -30,6 +33,7 @@ export function envs() {
   const {
     REHOST_SERVICE_PORT,
     IPFS_API_IP,
+    IPFS_PIN,
     IPFS_HOSTNAME,
     IPFS_API_PORT,
     IPFS_API_PROTOCOL,
@@ -45,6 +49,7 @@ export function envs() {
     IPFS_API_PORT: parseInt(IPFS_API_PORT, 10),
     IPFS_API_PROTOCOL,
     IPFS_API_IP,
+    IPFS_PIN: isTrue(IPFS_PIN),
     IPFS_HOSTNAME,
     MONGODB_USERNAME,
     MONGODB_PASSWORD,
