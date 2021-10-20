@@ -1,9 +1,15 @@
 /* eslint-disable @typescript-eslint/ban-types */
+import { yellow } from 'chalk'
 import { Express, Request } from 'express'
 import { IPFSHTTPClient } from 'ipfs-http-client'
 import { ObjectId } from 'mongodb'
 import { find, isNil, propEq } from 'ramda'
-import { dbConnection } from '../db'
+import {
+  dbConnection,
+  MongoRepositoryDocument,
+  RehostedEmbedded,
+  updateEmbedded,
+} from '../db'
 import { repoInformation, SupportedHosts } from '../git'
 import { buildRepoURL, isTrue } from '../util'
 import jobQueue from '../worker'
@@ -29,38 +35,63 @@ export function buildAddToQueueRoute(app: Express) {
         }
 
         const { host, username, repo } = req.params
-        const { tag: queryTag, update, branch, rev } = req.query
+        const {
+          tag: requestedTag,
+          update,
+          branch: requestedBranch,
+          rev: requestedRevision,
+        } = req.query
 
-        if (!isNil(rev)) {
+        if (!isNil(requestedBranch)) {
           throw new Error(
-            'Rehisting by revision/commit is not currently supported. Use tag instead'
-          )
-        }
-        if (!isNil(branch)) {
-          throw new Error(
-            'Rehisting by branch is not currently supported. Use tag instead'
+            'Re-hsting by branch is not currently supported. Use tag instead'
           )
         }
 
         const realRepoURL = buildRepoURL({ host, username, repo })
 
-        const mongoDocument = await dbConnection
+        const mongoDocument = (await dbConnection
           .collection('repos')
-          .findOne({ repoUrl: realRepoURL })
+          .findOne({ repoUrl: realRepoURL })) as MongoRepositoryDocument
 
         // this will fail and be caught if the rpo doesn't exist, or when providing a tag, that tag doesn't exist
-        const { commit, isFork, tag, committedDate } = await repoInformation({
+        const { isFork, tag, latestCommit } = await repoInformation({
           host: host,
           username,
           repo,
-          tag: queryTag,
+          tag: requestedTag,
         })
 
+        const actualRevision = !isNil(requestedRevision)
+          ? requestedRevision
+          : latestCommit.commit
+
+        const actualTag =
+          !isNil(requestedTag) && isNil(tag) ? requestedTag : tag
+
+        const actualBranch = !isNil(requestedBranch) ? requestedBranch : ''
+        console.log({ isFork, tag, latestCommit })
+        // throw new Error('s')
+
         if (mongoDocument) {
-          const latestCommit = commit
-          const isHashRehosted = find(propEq('rev', latestCommit))(
+          const isHashRehosted = find(propEq('rev', actualRevision))(
             mongoDocument.rehosted
-          )
+          ) as RehostedEmbedded
+
+          if (
+            !isNil(isHashRehosted) &&
+            !isNil(actualTag) &&
+            isNil(isHashRehosted.tag)
+          ) {
+            console.log(
+              yellow('Update the tag for the revision we already have')
+            )
+            await updateEmbedded(
+              new ObjectId(mongoDocument._id),
+              isHashRehosted.cid,
+              { ...isHashRehosted, tag: actualTag }
+            )
+          }
 
           const shouldUpdate =
             isNil(isHashRehosted) ||
@@ -72,12 +103,12 @@ export function buildAddToQueueRoute(app: Express) {
               host,
               username,
               repo,
-              tag,
-              rev: commit,
+              tag: actualTag,
+              rev: actualRevision,
+              branch: actualBranch,
               isFork,
-              branch,
               update: true,
-              committedDate,
+              committedDate: latestCommit.committedDate,
             })
             res.status(201).json({
               apiURL: `/v1/q/${job.attrs._id}`,
@@ -96,12 +127,12 @@ export function buildAddToQueueRoute(app: Express) {
             host,
             username,
             repo,
-            tag,
-            rev: commit,
+            tag: actualTag,
+            rev: actualRevision,
+            branch: actualBranch,
             isFork,
-            branch,
             update: false,
-            committedDate,
+            committedDate: latestCommit.committedDate,
           })
           res.status(201).json({
             apiURL: `/v1/q/${job.attrs._id}`,

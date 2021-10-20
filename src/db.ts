@@ -66,7 +66,6 @@ export interface Repository {
   rehosted: RehostedEmbedded[]
   isFork: boolean
   createdAt: number
-  updatedAt: number
 }
 
 export interface MongoRepositoryDocument extends Repository {
@@ -80,14 +79,13 @@ export interface MongoRepositoryDocument extends Repository {
  */
 export async function insertRepo(data: Repository) {
   const db = await getDB()
-  const { createdAt, isFork, rehosted, repo, repoUrl, updatedAt } = data
+  const { createdAt, isFork, rehosted, repo, repoUrl } = data
   return await db.collection('repos').insertOne({
     repo,
     repoUrl,
     rehosted,
     isFork,
     createdAt,
-    updatedAt,
   })
 }
 
@@ -103,6 +101,26 @@ export async function insertEmbedded(id: ObjectId, data: RehostedEmbedded) {
     {
       $push: {
         rehosted: data,
+      },
+    }
+  )
+}
+/**
+ * Append new rehosted data
+ * @param id Document ID
+ * @param data Rehosted repo data
+ */
+export async function updateEmbedded(
+  id: ObjectId,
+  rehostedCid: string,
+  data: RehostedEmbedded
+) {
+  const db = await getDB()
+  return await db.collection('repos').updateOne(
+    { _id: id, 'rehosted.cid': rehostedCid },
+    {
+      $set: {
+        'rehosted.$': data,
       },
     }
   )

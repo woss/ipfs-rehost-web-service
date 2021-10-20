@@ -27,8 +27,10 @@ export interface BasicRepoInfo {
 export interface IntegrationInfoReturn {
   isFork: boolean
   tag: string | null
-  commit: string
-  committedDate: string
+  latestCommit: {
+    commit: string
+    committedDate: string
+  }
   stars?: number
 }
 /**
@@ -55,11 +57,22 @@ export async function infoAboutRepo(
       inputParams = { ...inputParams, tag }
     }
     const res = await sdk.RepoBasicInfoWithTag(inputParams)
+
+    console.log(
+      'Repository res',
+      `${username}/${repo}`,
+      JSON.stringify(res, null, 2)
+    )
+
+    if (isNil(res.repository.latestCommitDefaultBranch)) {
+      throw new Error('This repository has no commits')
+    }
+
     const {
       repository: {
         tags: { nodes: tags },
         isFork,
-        latestCommit: { target: latestCommit },
+        latestCommitDefaultBranch: { target: latestCommit },
         stargazerCount,
       },
     } = res
@@ -68,24 +81,28 @@ export async function infoAboutRepo(
     const lastCommit = latestCommit as any
 
     if (isEmpty(tags)) {
-      console.log(`This repo does not have tag ${tag}`)
-
       return {
         isFork,
         tag: null,
-        commit: lastCommit.history.edges[0].node.hash,
-        committedDate: lastCommit.history.edges[0].node.committedDate,
+        latestCommit: {
+          commit: lastCommit.history.edges[0].node.oid,
+          committedDate: lastCommit.history.edges[0].node.committedDate,
+        },
         stars: stargazerCount,
       }
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tagGQL = tags[0].target as any
-
+      const tagGQL = tags[0] as any
+      if (isNil(tagGQL)) {
+        throw new Error('No commits found for this request, check logs.')
+      }
       return {
         isFork,
         tag: tagGQL.name,
-        commit: tagGQL.commit.oid,
-        committedDate: tagGQL.commit.committedDate,
+        latestCommit: {
+          commit: tagGQL.target.oid,
+          committedDate: tagGQL.target.committedDate,
+        },
         stars: stargazerCount,
       }
     }

@@ -2,7 +2,6 @@ import { blue, green, yellow } from 'chalk'
 import { Express } from 'express'
 import type { AddAllOptions } from 'ipfs-core-types/src/root'
 import { create, globSource, IPFSHTTPClient } from 'ipfs-http-client'
-import rimraf from 'rimraf'
 import { envs } from './env'
 const log = console.log
 
@@ -15,7 +14,7 @@ export const ipfsOptions: AddAllOptions = {
   progress: (bytes: number, path: string) => {
     console.log(path, bytes)
   },
-  pin: true,
+  pin: false,
 }
 
 export function createIPFSConnection(app?: Express) {
@@ -78,8 +77,9 @@ export async function uploadViaAddAll(path: string) {
     url: `https://${IPFS_HOSTNAME}/ipfs/${lastCid.cid}`,
   }
   log(green('Removing the repo from fs'))
-  rimraf.sync(path)
+  // rimraf.sync(path)
 
+  console.log(returnObject.cid)
   log(green('Done 🎉\n'))
 
   return returnObject
