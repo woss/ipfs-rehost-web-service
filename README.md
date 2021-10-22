@@ -39,6 +39,8 @@ pnpm start
 pnpm lint:fix
 ```
 
+There is a ENV variable called `IPFS_PIN` which you want to keep to `false` during the development.
+
 ### Building and running the project
 
 #### Building a Docker image
