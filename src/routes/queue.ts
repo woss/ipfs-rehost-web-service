@@ -8,7 +8,7 @@ import {
   dbConnection,
   MongoRepositoryDocument,
   RehostedEmbedded,
-  updateEmbedded
+  updateEmbedded,
 } from '../db'
 import { repoInformation, SupportedHosts } from '../git'
 import { buildRepoURL, isTrue } from '../util'
