@@ -58,11 +58,11 @@ export async function infoAboutRepo(
     }
     const res = await sdk.RepoBasicInfoWithTag(inputParams)
 
-    console.log(
-      'Repository res',
-      `${username}/${repo}`,
-      JSON.stringify(res, null, 2)
-    )
+    // console.log(
+    //   'Repository res',
+    //   `${username}/${repo}`,
+    //   JSON.stringify(res, null, 2)
+    // )
 
     if (isNil(res.repository.latestCommitDefaultBranch)) {
       throw new Error('This repository has no commits')

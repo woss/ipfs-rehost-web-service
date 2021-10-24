@@ -8,7 +8,7 @@ import {
   dbConnection,
   MongoRepositoryDocument,
   RehostedEmbedded,
-  updateEmbedded,
+  updateEmbedded
 } from '../db'
 import { repoInformation, SupportedHosts } from '../git'
 import { buildRepoURL, isTrue } from '../util'
@@ -29,11 +29,11 @@ export function buildAddToQueueRoute(app: Express) {
       res
     ) => {
       const ipfsClient: IPFSHTTPClient = app.get('ipfsClient')
+
       try {
         if (!ipfsClient.isOnline()) {
           throw new Error('IPFS is not connected')
         }
-
         const { host, username, repo } = req.params
         const {
           tag: requestedTag,
@@ -67,10 +67,10 @@ export function buildAddToQueueRoute(app: Express) {
           : latestCommit.commit
 
         const actualTag =
-          !isNil(requestedTag) && isNil(tag) ? requestedTag : tag
+          !isNil(requestedTag) && !isNil(tag) ? tag : requestedTag
 
         const actualBranch = !isNil(requestedBranch) ? requestedBranch : ''
-        console.log({ isFork, tag, latestCommit })
+        // console.log({ isFork, tag, latestCommit })
         // throw new Error('s')
 
         if (mongoDocument) {

@@ -45,11 +45,9 @@ export function normalizeUrlPathname(pathName: string) {
 export async function gitCloneBare(
   options: IGitCloneBareOptions
 ): Promise<IGitCloneReturn> {
-  const git = simpleGit()
-
   console.log('gitCloneBare got options', options)
 
-  const { repo, unpack = false, branch, rev } = options
+  const { repo, unpack = false, branch, rev, tag } = options
 
   const url = new URL(repo)
   const tmp = os.tmpdir()
@@ -58,9 +56,6 @@ export async function gitCloneBare(
 
   const execOptions = {
     cwd: repoPath,
-    stdio: [0, 1, 2],
-    // stdio: 'inherit',
-    // shell: true,
   }
 
   if (await exists(repoPath)) {
@@ -73,13 +68,14 @@ export async function gitCloneBare(
     await exec(`mkdir -p ${repoPath}`)
   }
 
-  // console.log(await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, { ...execOptions, cwd: tmp }))
-
   log(yellow('Cloning the bare repo'), url.href, repoPath)
-  console.log(await git.clone(url.href, repoPath, ['--bare']))
+  await exec(`git clone --quiet --bare ${url.href} ${repoPath}`, {
+    ...execOptions,
+    cwd: tmp,
+  })
 
-  await git.cwd({ path: repoPath, root: true })
-  await git.updateServerInfo()
+  await exec(`git update-server-info`, execOptions)
+  // console.log((await exec(`git rev-parse 20888c3`, execOptions)).stdout)
 
   if (!isNil(rev)) {
     console.log(`Reseting to the revision ${rev}`)
@@ -88,6 +84,9 @@ export async function gitCloneBare(
      * other one is `git update-ref refs/heads/rehosted 20888c33cd0f6f897703198199f33369cba8639a` but that will not end up in the detached state. maybe that is what we need .... hmmm .....
      */
     await exec(`echo ${rev} > HEAD`, execOptions)
+  } else if (!isNil(tag)) {
+    console.log(`Checking out the tag ${tag}`)
+    await exec(`git symbolic-ref HEAD refs/tags/${tag.trim()}`, execOptions)
   } else if (!isNil(branch)) {
     console.log(`Checking out the branch ${branch}`)
     await exec(`git symbolic-ref HEAD refs/heads/${branch.trim()}`, execOptions)
