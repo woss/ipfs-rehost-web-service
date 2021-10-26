@@ -7,6 +7,7 @@ import { MongoClient } from 'mongodb'
 import { setupMongoDB } from './db'
 import { envs, verifyEnv } from './env'
 import { createIPFSConnection } from './ipfs'
+import { homeRoute } from './routes/home'
 import { buildAddToQueueRoute, buildInfoRoute } from './routes/queue'
 import { rehostRoutes } from './routes/rehost'
 import { repositoryRoutes } from './routes/repos'
@@ -56,6 +57,7 @@ export async function createApp() {
   /**
    * Routes
    */
+  homeRoute(app)
   buildAddToQueueRoute(app)
   buildInfoRoute(app)
   repositoryRoutes(app)
